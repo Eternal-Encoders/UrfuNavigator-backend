@@ -1,0 +1,14 @@
+.devortest-container {
+    width: 100%;
+    padding: 2.5rem 0;
+    margin-bottom: var(--base);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: var(--style-radius-m);
+    background: var(--theme-elevation-100);
+}
+/*--gutter-h*/
+.devortest-text {
+    margin: 0;
+}
