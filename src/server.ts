@@ -10,7 +10,7 @@ require('dotenv').config()
 const PORT = process.env.PORT_ENV || 5000;
 
 initRedis({
-  redisUrl: `${process.env.REDIS_URI_ENV}`
+  redisUrl: `redis://default:${process.env.REDIS_PASS}@${process.env.HOST}/cache`
 })
 
 const app = express()
