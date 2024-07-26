@@ -3,7 +3,6 @@ import payload from 'payload'
 import https from "https";
 import fs from "fs";
 import path from "path";
-import { initRedis } from '@aengz/payload-redis-cache';
 
 require('dotenv').config()
 
@@ -24,16 +23,10 @@ function loadEnvOrFile(name: string): string {
 
   return data
 }
-
-process.env['REDIS_PASS'] = loadEnvOrFile('REDIS_PASS')
 process.env['PAYLOAD_SECRET'] = loadEnvOrFile('PAYLOAD_SECRET')
 process.env['DATABASE_URI'] = loadEnvOrFile('DATABASE_URI')
 
 const PORT = process.env.PORT_ENV || 5000;
-
-initRedis({
-  redisUrl: `redis://default:${process.env.REDIS_PASS}@${process.env.HOST}/cache`
-})
 
 const app = express()
 

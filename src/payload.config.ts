@@ -4,7 +4,6 @@ import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { webpackBundler } from '@payloadcms/bundler-webpack'
 import { slateEditor } from '@payloadcms/richtext-slate'
 import { buildConfig } from 'payload/config'
-import { cachePlugin } from '@aengz/payload-redis-cache'
 
 import Users from './collections/Users'
 import Insitutes from './collections/Institutes'
@@ -40,9 +39,6 @@ export default buildConfig({
     schemaOutputFile: path.resolve(__dirname, 'generated-schema.graphql'),
   },
   plugins: [
-    cachePlugin({
-      excludedCollections: ['users', 'media']
-    })
   ],
   db: mongooseAdapter({
     url: process.env.DATABASE_URI,
