@@ -3,14 +3,13 @@ WORKDIR /home/node
 
 COPY ./package.json ./package.json
 
-RUN yarn install --network-timeout 100000
+RUN yarn install
 
 COPY ./src ./src
 COPY ./nodemon.json ./nodemon.json
 COPY ./tsconfig.json ./tsconfig.json
 
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=4096"
 ENV PORT_ENV 80
 
 RUN yarn build
