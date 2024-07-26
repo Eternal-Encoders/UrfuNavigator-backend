@@ -13,6 +13,7 @@ import { Media } from './collections/Media'
 import Stairs from './collections/Stairs'
 import GraphPoints from './collections/GraphPoint'
 import DevOrTestText from './ui/befor_nav_link/dev_or_test'
+import { loadEnvOrFile } from './utils'
 
 export default buildConfig({
   admin: {
@@ -45,6 +46,6 @@ export default buildConfig({
     })
   ],
   db: mongooseAdapter({
-    url: process.env.DATABASE_URI,
+    url: loadEnvOrFile('DATABASE_URI'),
   }),
 })

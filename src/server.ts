@@ -4,13 +4,14 @@ import https from "https";
 import fs from "fs";
 import path from "path";
 import { initRedis } from '@aengz/payload-redis-cache';
+import { loadEnvOrFile } from './utils';
 
 require('dotenv').config()
 
 const PORT = process.env.PORT_ENV || 5000;
 
 initRedis({
-  redisUrl: `redis://default:${process.env.REDIS_PASS}@${process.env.HOST}/cache`
+  redisUrl: `redis://default:${loadEnvOrFile('REDIS_PASS')}@${process.env.HOST}/cache`
 })
 
 const app = express()
@@ -23,7 +24,7 @@ app.get('/', (_, res) => {
 const start = async () => {
   // Initialize Payload
   await payload.init({
-    secret: process.env.PAYLOAD_SECRET,
+    secret: loadEnvOrFile('PAYLOAD_SECRET'),
     express: app,
     onInit: async () => {
       payload.logger.info(`Payload Admin URL: ${payload.getAdminURL()}`)
