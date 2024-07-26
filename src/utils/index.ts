@@ -15,21 +15,3 @@ export function fromKeyToId(obj: {[id: string]: {[key: string]: any}}): {[fieldK
 export function fromIdToKey<Type extends IdWise>(obj: Type[]): {[id: string]: Type} {
     return Object.fromEntries(obj.map(data => [data.id, data]));
 }
-
-export function loadEnvOrFile(name: string): string {
-    let data = process.env[name]
-    if (!data) {
-        const path = process.env[`${name}_FILE`]
-        if (!path) {
-            return ''
-        }
-        
-        try {
-            data = fs.readFileSync(path, 'utf8');
-        } catch (err) {
-            return ''
-        }
-    }
-
-    return data
-}
