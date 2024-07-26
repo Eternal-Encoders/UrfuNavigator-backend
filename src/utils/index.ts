@@ -21,13 +21,13 @@ export function loadEnvOrFile(name: string): string {
     if (!data) {
         const path = process.env[`${name}_FILE`]
         if (!path) {
-            throw Error(`No ${name} specified`)
+            return ''
         }
         
         try {
             data = fs.readFileSync(path, 'utf8');
         } catch (err) {
-            throw err
+            return ''
         }
     }
 
