@@ -1,0 +1,92 @@
+package app
+
+import (
+	"UrfuNavigator-backend/internal/models"
+	"log"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+func (s *API) GetIconImageHandler(c *fiber.Ctx) error {
+	iconName := c.Params("icon")
+	if !strings.HasSuffix(iconName, ".svg") {
+		log.Println("Request Object with unsupported type")
+		return c.Status(fiber.StatusBadRequest).SendString("This file type is not supported")
+	}
+
+	obj, err := s.ObjectStore.GetFile(iconName)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Cannot get file from Object Storage")
+	}
+
+	c.Attachment(iconName)
+	return c.Send(obj)
+}
+
+func (s *API) GetIconHandler(c *fiber.Ctx) error {
+	iconName := c.Params("icon")
+	icon, err := s.Store.GetInstituteIcons([]string{iconName})
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in GetInstituteIcons")
+	}
+	if len(icon) != 1 {
+		log.Println("There is too many or no media with id")
+		return c.Status(fiber.StatusNotFound).SendString("Cannot find media by id")
+	}
+
+	response := models.InstituteIconResponse{
+		Id:  icon[0].Id.Hex(),
+		Url: icon[0].Url,
+		Alt: icon[0].Alt,
+	}
+
+	return c.JSON(response)
+}
+
+func (s *API) GetAllIconsHandler(c *fiber.Ctx) error {
+	icons, err := s.Store.GetAllInstituteIcons()
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in GetAllInstituteIcons")
+	}
+
+	response := []models.InstituteIconResponse{}
+	for _, icon := range icons {
+		response = append(response, models.InstituteIconResponse{
+			Id:  icon.Id.Hex(),
+			Url: icon.Url,
+			Alt: icon.Alt,
+		})
+	}
+
+	return c.JSON(response)
+}
+
+func (s *API) PostIconHandler(c *fiber.Ctx) error {
+	file, err := c.FormFile("icon")
+
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Error occured while loading file from request")
+	}
+
+	url, name, err := s.ObjectStore.PostFile(*file)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Error occured while loading file in bucket")
+	}
+
+	err = s.Store.PostInstituteIcon(models.InstituteIconRequest{
+		Url: url,
+		Alt: name,
+	})
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in PostInstituteIcon")
+	}
+
+	return err
+}
