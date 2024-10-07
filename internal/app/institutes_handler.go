@@ -97,5 +97,11 @@ func (s *API) PostInstituteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Something wrong with request body")
 	}
 
-	return s.Store.PostInstitute(*data)
+	err := s.Store.PostInstitute(*data)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
+	}
+
+	return err
 }
