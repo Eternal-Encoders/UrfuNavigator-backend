@@ -3,6 +3,7 @@ package database
 import (
 	"UrfuNavigator-backend/internal/models"
 	"context"
+	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -41,6 +42,17 @@ func (s *MongoDB) GetAllInstitutes() ([]models.Institute, error) {
 func (s *MongoDB) PostInstitute(institute models.InstituteRequest) error {
 	collection := s.Database.Collection("institutes")
 
-	_, err := collection.InsertOne(context.TODO(), institute)
+	iconCol := s.Database.Collection("media")
+	filter := bson.D{{"alt", institute.Icon}}
+	log.Println(filter)
+	// var result models.InstituteIcon
+	_, err := iconCol.Find(context.TODO(), filter)
+	if err != nil {
+		log.Println("1")
+		return err
+	}
+
+	_, err = collection.InsertOne(context.TODO(), institute)
+	log.Println("2")
 	return err
 }

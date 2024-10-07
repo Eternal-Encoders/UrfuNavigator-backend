@@ -45,7 +45,7 @@ func (s *API) Run() error {
 	app.Get("/institute", s.GetInstituteHandler)
 	app.Get("/institutes", s.GetAllInstitutesHandler)
 	app.Post("/icon", s.PostIconHandler)
-	//app.Post()
+	app.Post("/institute", s.PostInstituteHandler)
 
 	return app.Listen(s.Port)
 }
