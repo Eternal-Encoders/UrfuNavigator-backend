@@ -3,6 +3,7 @@ package app
 import (
 	"UrfuNavigator-backend/internal/models"
 	"UrfuNavigator-backend/internal/utils"
+	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -22,7 +23,7 @@ func (s *API) GetInstituteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetInstitute")
 	}
 
-	iconData, iconErr := s.Store.GetInstituteIcons([]string{instituteData.Icon})
+	iconData, iconErr := s.Store.GetInstituteIconsByName([]string{instituteData.Icon})
 	if iconErr != nil {
 		log.Println(iconErr)
 		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetInstituteIcons")
@@ -101,6 +102,37 @@ func (s *API) PostInstituteHandler(c *fiber.Ctx) error {
 	if err != nil {
 		log.Println(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
+	}
+
+	return err
+}
+
+func (s *API) DeleteInstituteHandler(c *fiber.Ctx) error {
+	id := c.Query("id")
+
+	err := s.Store.DeleteInstitute(id)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in DeleteInstitute")
+	}
+
+	return err
+}
+
+func (s *API) PutInstituteHandler(c *fiber.Ctx) error {
+	id := c.Query("id")
+	fmt.Println("Institute ID:", id)
+	data := new(models.InstituteRequest)
+
+	if err := c.BodyParser(data); err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Something wrong with request body")
+	}
+
+	err := s.Store.UpdateInstitute(*data, id)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in UpdateInstitute")
 	}
 
 	return err

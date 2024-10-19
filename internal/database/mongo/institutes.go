@@ -3,9 +3,11 @@ package database
 import (
 	"UrfuNavigator-backend/internal/models"
 	"context"
+	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func (s *MongoDB) GetInstitute(url string) (models.Institute, error) {
@@ -35,6 +37,7 @@ func (s *MongoDB) GetAllInstitutes() ([]models.Institute, error) {
 	if decodeErr != nil {
 		return nil, decodeErr
 	}
+	log.Println(result[0].Id)
 
 	return result, nil
 }
@@ -54,5 +57,37 @@ func (s *MongoDB) PostInstitute(institute models.InstituteRequest) error {
 
 	_, err = collection.InsertOne(context.TODO(), institute)
 	log.Println("2")
+	return err
+}
+
+func (s *MongoDB) DeleteInstitute(id string) error {
+	collection := s.Database.Collection("institutes")
+
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{
+		"_id": objId,
+	}
+
+	_, err = collection.DeleteOne(context.TODO(), filter)
+	return err
+}
+
+func (s *MongoDB) UpdateInstitute(body models.InstituteRequest, id string) error {
+	collection := s.Database.Collection("institutes")
+
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		fmt.Println(err != nil)
+		return err
+	}
+	filter := bson.M{
+		"_id": objId,
+	}
+
+	_, err = collection.UpdateOne(context.TODO(), filter, bson.M{"$set": body})
+	fmt.Println(err != nil)
 	return err
 }
