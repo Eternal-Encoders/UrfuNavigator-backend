@@ -3,7 +3,7 @@ package models
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type Institute struct {
-	Id              primitive.ObjectID `json:"id"`
+	Id              primitive.ObjectID `bson:"_id" json:"id"`
 	Name            string             `json:"name"`
 	DisplayableName string             `json:"displayableName"`
 	MinFloor        int                `json:"minFloor"`

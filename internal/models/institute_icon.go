@@ -9,7 +9,7 @@ type InstituteIconResponse struct {
 }
 
 type InstituteIcon struct {
-	Id  primitive.ObjectID `bson:"id" json:"id"`
+	Id  primitive.ObjectID `bson:"_id" json:"id"`
 	Url string             `bson:"filename" json:"url"`
 	Alt string             `json:"alt"`
 }

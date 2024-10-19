@@ -57,17 +57,26 @@ func (s *MinIOS3) GetFile(fileName string) ([]byte, error) {
 func (s *MinIOS3) PostFile(file multipart.FileHeader) (string, string, error) {
 	option := minio.PutObjectOptions{ContentType: file.Header["Content-Type"][0]}
 	fileName := file.Filename
+	getOption := minio.GetObjectOptions{}
+
+	f, err := s.Client.GetObject(context.TODO(), s.BucketName, fileName, getOption)
+
+	stat, _ := f.Stat()
+
+	if stat.Size != 0 {
+		return "", "", err
+	}
 
 	buff, err := file.Open()
 	if err != nil {
-		log.Fatalln(err)
+		return "", "", err
 	}
 
 	defer buff.Close()
 
 	info, err := s.Client.PutObject(context.Background(), s.BucketName, fileName, buff, file.Size, option)
 	if err != nil {
-		log.Fatalln(err)
+		return "", "", err
 	}
 
 	log.Println("Uploaded", fileName, " of size: ", info.Size, "Successfully.")
@@ -75,15 +84,11 @@ func (s *MinIOS3) PostFile(file multipart.FileHeader) (string, string, error) {
 	return fileName, fileName, err
 }
 
-func (s *MinIOS3) DeleteFile(fileName string) {
+func (s *MinIOS3) DeleteFile(fileName string) error {
 	opts := minio.RemoveObjectOptions{
 		GovernanceBypass: true,
 	}
 
 	err := s.Client.RemoveObject(context.Background(), s.BucketName, fileName, opts)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	log.Println("Success")
+	return err
 }
