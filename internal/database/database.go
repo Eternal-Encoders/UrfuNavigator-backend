@@ -10,6 +10,9 @@ type Store interface {
 	GetAllInstituteIcons() ([]models.InstituteIcon, error)
 	PostInstituteIcon(models.InstituteIconRequest) error
 	PostInstitute(models.InstituteRequest) error
+	PostFloor(models.Floor) error
+	PostGraphs(graphs []*models.GraphPoint) error
+	PostStairs(graphs []*models.GraphPoint) error
 	DeleteInstituteIcon(id string) (string, error)
 	DeleteInstitute(id string) error
 	UpdateInstitute(body models.InstituteRequest, id string) error

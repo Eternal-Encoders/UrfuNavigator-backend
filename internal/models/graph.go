@@ -3,7 +3,7 @@ package models
 type WeekTime struct {
 	From    string `json:"from"`
 	To      string `json:"to"`
-	IsDayOf *bool  `json:"isDayOf"`
+	IsDayOf bool   `json:"isDayOf"`
 }
 
 type GraphPoint struct {
@@ -18,7 +18,7 @@ type GraphPoint struct {
 	Time        []WeekTime `json:"time"`
 	Description string     `json:"description"`
 	Info        string     `json:"info"`
-	MenuId      *string    `json:"menuId"`
-	IsPassFree  *bool      `json:"isPassFree"`
-	StairId     *string    `json:"stairId"`
+	MenuId      string     `json:"menuId"`
+	IsPassFree  bool       `json:"isPassFree"`
+	StairId     string     `json:"stairId"`
 }
