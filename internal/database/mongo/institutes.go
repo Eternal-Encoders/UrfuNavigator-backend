@@ -47,16 +47,16 @@ func (s *MongoDB) PostInstitute(institute models.InstituteRequest) error {
 
 	iconCol := s.Database.Collection("media")
 	filter := bson.D{{"alt", institute.Icon}}
-	log.Println(filter)
+	// log.Println(filter)
 	// var result models.InstituteIcon
 	_, err := iconCol.Find(context.TODO(), filter)
 	if err != nil {
-		log.Println("1")
+		// log.Println("1")
 		return err
 	}
 
 	_, err = collection.InsertOne(context.TODO(), institute)
-	log.Println("2")
+	// log.Println("2")
 	return err
 }
 

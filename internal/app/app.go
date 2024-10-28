@@ -46,6 +46,7 @@ func (s *API) Run() error {
 	app.Get("/institutes", s.GetAllInstitutesHandler)
 	app.Post("/icon", s.PostIconHandler)
 	app.Post("/institute", s.PostInstituteHandler)
+	app.Post("/floor", s.PostFloorFromFileHandler)
 	app.Delete("/icon", s.DeleteIconHandler)
 	app.Delete("/institute", s.DeleteInstituteHandler)
 	app.Put("/institute", s.PutInstituteHandler)
