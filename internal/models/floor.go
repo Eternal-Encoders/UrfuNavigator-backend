@@ -1,6 +1,30 @@
 package models
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type Floor struct {
+	Id        primitive.ObjectID `bson:"_id" json:"id"`
+	Institute string             `json:"institute"`
+	Floor     int                `json:"floor"`
+	Width     int                `json:"width"`
+	Height    int                `json:"height"`
+	Audiences []*Auditorium      `json:"audiences"`
+	Service   []*Service         `json:"service"`
+	Graph     []string           `json:"graph"`
+}
+
+type FloorResponse struct {
+	Id        string        `json:"id"`
+	Institute string        `json:"institute"`
+	Floor     int           `json:"floor"`
+	Width     int           `json:"width"`
+	Height    int           `json:"height"`
+	Audiences []*Auditorium `json:"audiences"`
+	Service   []*Service    `json:"service"`
+	Graph     []string      `json:"graph"`
+}
+
+type FloorRequest struct {
 	Institute string        `json:"institute"`
 	Floor     int           `json:"floor"`
 	Width     int           `json:"width"`

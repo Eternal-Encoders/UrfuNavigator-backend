@@ -4,7 +4,6 @@ import (
 	"UrfuNavigator-backend/internal/models"
 	"context"
 	"fmt"
-	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -37,7 +36,7 @@ func (s *MongoDB) GetAllInstitutes() ([]models.Institute, error) {
 	if decodeErr != nil {
 		return nil, decodeErr
 	}
-	log.Println(result[0].Id)
+	// log.Println(result[0].Id)
 
 	return result, nil
 }
