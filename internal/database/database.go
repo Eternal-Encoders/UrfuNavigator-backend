@@ -3,7 +3,7 @@ package database
 import "UrfuNavigator-backend/internal/models"
 
 type Store interface {
-	GetInstitute(url string) (models.Institute, error)
+	GetInstitute(url string) models.InstituteReadDBResponse
 	GetAllInstitutes() ([]models.Institute, error)
 	GetInstituteIcons(ids []string) ([]models.InstituteIcon, error)
 	GetInstituteIconsByName(ids []string) ([]models.InstituteIcon, error)
@@ -16,7 +16,7 @@ type Store interface {
 	GetAllStairs() ([]models.Stair, error)
 	PostInstituteIcon(models.InstituteIconRequest) error
 	PostInstitute(models.InstituteRequest) error
-	PostFloor(models.FloorRequest) error
+	PostFloor(models.FloorFromFile) error
 	PostGraphs(graphs []*models.GraphPoint) error
 	PostStairs(graphs []*models.GraphPoint) error
 	DeleteInstituteIcon(id string) (string, error)

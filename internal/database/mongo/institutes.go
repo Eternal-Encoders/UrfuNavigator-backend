@@ -4,21 +4,36 @@ import (
 	"UrfuNavigator-backend/internal/models"
 	"context"
 	"fmt"
+	"log"
 
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func (s *MongoDB) GetInstitute(url string) (models.Institute, error) {
+func (s *MongoDB) GetInstitute(url string) models.InstituteReadDBResponse {
 	collection := s.Database.Collection("institutes")
 	filter := bson.M{
 		"url": url,
 	}
 
 	var result models.Institute
+	var errType int
 	err := collection.FindOne(context.TODO(), filter).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		errType = fiber.StatusNotFound
+	} else {
+		errType = fiber.StatusInternalServerError
+	}
 
-	return result, err
+	return models.InstituteReadDBResponse{
+		Response:  result,
+		Error:     err,
+		ErrorType: errType,
+	}
 }
 
 func (s *MongoDB) GetAllInstitutes() ([]models.Institute, error) {
@@ -43,19 +58,31 @@ func (s *MongoDB) GetAllInstitutes() ([]models.Institute, error) {
 
 func (s *MongoDB) PostInstitute(institute models.InstituteRequest) error {
 	collection := s.Database.Collection("institutes")
-
 	iconCol := s.Database.Collection("media")
-	filter := bson.D{{"alt", institute.Icon}}
-	// log.Println(filter)
-	// var result models.InstituteIcon
-	_, err := iconCol.Find(context.TODO(), filter)
+
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+
+	session, err := s.Client.StartSession()
 	if err != nil {
-		// log.Println("1")
 		return err
 	}
 
-	_, err = collection.InsertOne(context.TODO(), institute)
-	// log.Println("2")
+	defer session.EndSession(context.TODO())
+
+	_, err = session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
+		filter := bson.M{"alt": institute.Icon}
+
+		err := iconCol.FindOne(ctx, filter).Err()
+		if err != nil {
+			log.Println("Icon error:", err)
+			return nil, err
+		}
+
+		result, err := collection.InsertOne(ctx, institute)
+		return result, err
+	}, txnOptions)
+
 	return err
 }
 

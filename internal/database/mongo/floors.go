@@ -4,16 +4,109 @@ import (
 	"UrfuNavigator-backend/internal/models"
 	"UrfuNavigator-backend/internal/utils"
 	"context"
+	"errors"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func (s *MongoDB) PostFloor(floor models.FloorRequest) error {
-	collection := s.Database.Collection("floors")
+func (s *MongoDB) PostFloor(floor models.FloorFromFile) error {
+	floorCol := s.Database.Collection("floors")
+	graphCol := s.Database.Collection("graph_points")
+	stairsCol := s.Database.Collection("stairs")
+	wc := writeconcern.New(writeconcern.WMajority())
+	txnOptions := options.Transaction().SetWriteConcern(wc)
 
-	_, err := collection.InsertOne(context.TODO(), floor)
+	session, err := s.Client.StartSession()
+	if err != nil {
+		log.Println("Something went wrong while starting new session")
+		return err
+	}
+
+	defer session.EndSession(context.TODO())
+
+	_, err = session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
+		audArr := []*models.Auditorium{}
+		for _, v := range floor.Audiences {
+			audArr = append(audArr, v)
+		}
+
+		graphArr := []*models.GraphPoint{}
+		graphKeysArr := []string{}
+		for k, v := range floor.Graph {
+			graphArr = append(graphArr, v)
+			graphKeysArr = append(graphKeysArr, k)
+		}
+
+		floorReq := models.FloorRequest{
+			Institute: floor.Institute,
+			Floor:     floor.Floor,
+			Width:     floor.Width,
+			Height:    floor.Height,
+			Service:   floor.Service,
+			Audiences: audArr,
+			Graph:     graphKeysArr,
+		}
+
+		_, err = floorCol.InsertOne(ctx, floorReq)
+		if err != nil {
+			log.Println("Something went wrong with inserting floor obj in DB")
+			return nil, err
+		}
+
+		if len(graphArr) == 0 {
+			log.Println("Empty graphs list")
+			return nil, errors.New("empty graphs list")
+		}
+
+		newValue := make([]interface{}, len(graphArr))
+
+		for i := range graphArr {
+			newValue[i] = graphArr[i]
+		}
+
+		_, err := graphCol.InsertMany(ctx, newValue)
+		if err != nil {
+			log.Println("Something went wrong with inserting graph_point objects in DB")
+			return nil, err
+		} else {
+			for i := range graphArr {
+				if graphArr[i].StairId != "" {
+					filter := bson.M{"_id": graphArr[i].StairId}
+					var stairGraph models.Stair
+
+					err := stairsCol.FindOne(ctx, filter).Decode(&stairGraph)
+					if err != nil {
+						_, err = stairsCol.InsertOne(ctx, models.Stair{
+							Id:         graphArr[i].StairId,
+							StairPoint: graphArr[i].StairId,
+							Institute:  graphArr[i].Institute,
+							Links:      []string{graphArr[i].Id},
+						})
+
+						if err != nil {
+							log.Println("Something went wrong with inserting stair object in DB")
+							return nil, err
+						}
+					} else {
+						l := append(stairGraph.Links, graphArr[i].Id)
+						_, err = stairsCol.UpdateOne(ctx, filter, bson.M{"$set": bson.M{"links": l}})
+						if err != nil {
+							log.Println("Something went wrong in stairsCol.UpdateOne")
+							return nil, err
+						}
+					}
+				}
+			}
+		}
+
+		return nil, nil
+	}, txnOptions)
+
 	return err
 }
 

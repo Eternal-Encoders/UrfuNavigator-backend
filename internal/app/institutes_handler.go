@@ -10,20 +10,20 @@ import (
 )
 
 func (s *API) GetInstituteHandler(c *fiber.Ctx) error {
-	url, urlExist := c.Queries()["url"]
+	url := c.Query("url")
 
-	if !urlExist {
+	if url == "" {
 		log.Println("Request Institute without url")
 		return c.Status(fiber.StatusBadRequest).SendString("Request must contain url query parameters")
 	}
 
-	instituteData, err := s.Store.GetInstitute(url)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetInstitute")
+	dbRes := s.Store.GetInstitute(url)
+	if dbRes.Error != nil {
+		log.Println(dbRes.Error)
+		return c.Status(dbRes.ErrorType).SendString(dbRes.Error.Error())
 	}
 
-	iconData, iconErr := s.Store.GetInstituteIconsByName([]string{instituteData.Icon})
+	iconData, iconErr := s.Store.GetInstituteIconsByName([]string{dbRes.Response.Icon})
 	if iconErr != nil {
 		log.Println(iconErr)
 		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetInstituteIcons")
@@ -35,14 +35,14 @@ func (s *API) GetInstituteHandler(c *fiber.Ctx) error {
 	}
 
 	response := models.InstituteResponse{
-		Id:              instituteData.Id.Hex(),
-		Name:            instituteData.Name,
-		DisplayableName: instituteData.DisplayableName,
-		MinFloor:        instituteData.MinFloor,
-		MaxFloor:        instituteData.MaxFloor,
-		Url:             instituteData.Url,
-		Latitude:        instituteData.Latitude,
-		Longitude:       instituteData.Longitude,
+		Id:              dbRes.Response.Id.Hex(),
+		Name:            dbRes.Response.Name,
+		DisplayableName: dbRes.Response.DisplayableName,
+		MinFloor:        dbRes.Response.MinFloor,
+		MaxFloor:        dbRes.Response.MaxFloor,
+		Url:             dbRes.Response.Url,
+		Latitude:        dbRes.Response.Latitude,
+		Longitude:       dbRes.Response.Longitude,
 		Icon:            utils.IconToIconResponse(iconData[0]),
 	}
 
@@ -101,7 +101,7 @@ func (s *API) PostInstituteHandler(c *fiber.Ctx) error {
 	err := s.Store.PostInstitute(*data)
 	if err != nil {
 		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
+		return c.Status(fiber.StatusBadRequest).SendString("Something wrong in PostInstitute")
 	}
 
 	return err

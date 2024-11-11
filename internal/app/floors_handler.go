@@ -29,52 +29,17 @@ func (s *API) PostFloorFromFileHandler(c *fiber.Ctx) error {
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, f); err != nil {
 		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong while reading file into []bytes")
+		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong while reading file into []byte")
 	}
 
 	json.Unmarshal([]byte(buf.Bytes()), &floorFromFile)
 
-	audArr := []*models.Auditorium{}
-	for _, v := range floorFromFile.Audiences {
-		audArr = append(audArr, v)
-	}
+	err = s.Store.PostFloor(floorFromFile)
 
-	graphArr := []*models.GraphPoint{}
-	graphKeysArr := []string{}
-	for k, v := range floorFromFile.Graph {
-		graphArr = append(graphArr, v)
-		graphKeysArr = append(graphKeysArr, k)
-	}
-
-	floor := models.FloorRequest{
-		Institute: floorFromFile.Institute,
-		Floor:     floorFromFile.Floor,
-		Width:     floorFromFile.Width,
-		Height:    floorFromFile.Height,
-		Service:   floorFromFile.Service,
-		Audiences: audArr,
-		Graph:     graphKeysArr,
-	}
-
-	err = s.Store.PostFloor(floor)
-	if err == nil {
-		err := s.Store.PostGraphs(graphArr)
-		if err != nil {
-			log.Println(err)
-			return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in PostGraphs")
-		} else {
-			err = s.Store.PostStairs(graphArr)
-			if err != nil {
-				log.Println(err)
-				return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in PostStairs")
-			}
-		}
-	} else {
+	if err != nil {
 		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in PostFloor")
+		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in PostFloor")
 	}
-
-	// log.Println(floor.Audiences)
 	return err
 }
 
