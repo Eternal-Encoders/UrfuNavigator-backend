@@ -106,9 +106,9 @@ func (s *MongoDB) UpdateInstitute(body models.InstituteRequest, id string) error
 
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		fmt.Println(err != nil)
 		return err
 	}
+
 	filter := bson.M{
 		"_id": objId,
 	}

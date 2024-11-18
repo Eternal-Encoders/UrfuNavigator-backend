@@ -12,8 +12,6 @@ import (
 
 func (s *API) PostFloorFromFileHandler(c *fiber.Ctx) error {
 	file, err := c.FormFile("floor")
-	var floorFromFile models.FloorFromFile
-
 	if err != nil {
 		log.Println(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Error occured while loading file from request")
@@ -24,6 +22,7 @@ func (s *API) PostFloorFromFileHandler(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong while reading file")
 	}
+
 	defer f.Close()
 
 	buf := bytes.NewBuffer(nil)
@@ -32,6 +31,7 @@ func (s *API) PostFloorFromFileHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong while reading file into []byte")
 	}
 
+	var floorFromFile models.FloorFromFile
 	json.Unmarshal([]byte(buf.Bytes()), &floorFromFile)
 
 	err = s.Store.PostFloor(floorFromFile)

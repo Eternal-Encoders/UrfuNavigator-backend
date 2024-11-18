@@ -3,7 +3,6 @@ package app
 import (
 	"UrfuNavigator-backend/internal/models"
 	"UrfuNavigator-backend/internal/utils"
-	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -121,7 +120,6 @@ func (s *API) DeleteInstituteHandler(c *fiber.Ctx) error {
 
 func (s *API) PutInstituteHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
-	fmt.Println("Institute ID:", id)
 	data := new(models.InstituteRequest)
 
 	if err := c.BodyParser(data); err != nil {

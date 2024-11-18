@@ -151,59 +151,78 @@ func (s *MongoDB) DeleteFloor(id string) error {
 	stairsCol := s.Database.Collection("stairs")
 	graphsCol := s.Database.Collection("graph_points")
 	floorsCol := s.Database.Collection("floors")
+	wc := writeconcern.New(writeconcern.WMajority())
+	txnOptions := options.Transaction().SetWriteConcern(wc)
 
-	objId, err := primitive.ObjectIDFromHex(id)
+	session, err := s.Client.StartSession()
 	if err != nil {
-		return err
-	}
-	floorFilter := bson.M{
-		"_id": objId,
-	}
-	var floor models.Floor
-	err = floorsCol.FindOne(context.TODO(), floorFilter).Decode(&floor)
-	if err != nil {
+		log.Println("Something went wrong while starting new session")
 		return err
 	}
 
-	for _, v := range floor.Graph {
-		graphFilter := bson.M{
-			"_id": v,
-		}
-		var graph models.GraphPoint
-		err := graphsCol.FindOne(context.TODO(), graphFilter).Decode(&graph)
+	defer session.EndSession(context.TODO())
+
+	_, err = session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
+
+		objId, err := primitive.ObjectIDFromHex(id)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if graph.StairId != "" {
-			stairFilter := bson.M{
-				"stairPoint": graph.StairId,
-			}
-			var stair models.Stair
-			err = stairsCol.FindOne(context.TODO(), stairFilter).Decode(&stair)
-			if err != nil {
-				return err
-			}
-			log.Println(stair.Id)
-
-			linkIndex := utils.GetIndex(stair.Links, graph.Id)
-			newLinks := append(stair.Links[:linkIndex], stair.Links[linkIndex+1:]...)
-			_, err = stairsCol.UpdateOne(context.TODO(), stairFilter, bson.M{"$set": bson.M{"links": newLinks}})
-			if err != nil {
-				return err
-			}
+		floorFilter := bson.M{
+			"_id": objId,
 		}
-
-		_, err = graphsCol.DeleteOne(context.TODO(), graphFilter)
+		var floor models.Floor
+		err = floorsCol.FindOne(context.TODO(), floorFilter).Decode(&floor)
 		if err != nil {
-			return err
+			return nil, err
 		}
-	}
 
-	_, err = floorsCol.DeleteOne(context.TODO(), floorFilter)
-	if err != nil {
-		return err
-	}
+		for _, v := range floor.Graph {
+			graphFilter := bson.M{
+				"_id": v,
+			}
+			var graph models.GraphPoint
+			err := graphsCol.FindOne(context.TODO(), graphFilter).Decode(&graph)
+			if err != nil {
+				return nil, err
+			}
+
+			if graph.StairId != "" {
+				stairFilter := bson.M{
+					"stairPoint": graph.StairId,
+				}
+				var stair models.Stair
+				err = stairsCol.FindOne(context.TODO(), stairFilter).Decode(&stair)
+				if err != nil {
+					return nil, err
+				}
+				log.Println(stair.Id)
+
+				linkIndex := utils.GetIndex(stair.Links, graph.Id)
+				newLinks := append(stair.Links[:linkIndex], stair.Links[linkIndex+1:]...)
+				_, err = stairsCol.UpdateOne(context.TODO(), stairFilter, bson.M{"$set": bson.M{"links": newLinks}})
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			_, err = graphsCol.DeleteOne(context.TODO(), graphFilter)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		_, err = floorsCol.DeleteOne(context.TODO(), floorFilter)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}, txnOptions)
 
 	return err
 }
+
+// func (s *MongoDB) UpdateFloor(id string, body map[string]interface{}) error {
+
+// }
