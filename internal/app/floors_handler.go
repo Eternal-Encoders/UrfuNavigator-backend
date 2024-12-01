@@ -29,7 +29,7 @@ func (s *API) PostFloorFromFileHandler(c *fiber.Ctx) error {
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, f); err != nil {
 		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong while reading file into []bytes")
+		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong while reading file into []bytes")
 	}
 
 	json.Unmarshal([]byte(buf.Bytes()), &floorFromFile)
@@ -56,25 +56,28 @@ func (s *API) PostFloorFromFileHandler(c *fiber.Ctx) error {
 		Graph:     graphKeysArr,
 	}
 
-	err = s.Store.PostFloor(floor)
-	if err == nil {
-		err := s.Store.PostGraphs(graphArr)
-		if err != nil {
-			log.Println(err)
-			return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in PostGraphs")
-		} else {
-			err = s.Store.PostStairs(graphArr)
-			if err != nil {
-				log.Println(err)
-				return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in PostStairs")
-			}
-		}
-	} else {
+	err = s.Store.PostFloor(floor, graphArr)
+	if err != nil {
 		log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in PostFloor")
 	}
 
-	// log.Println(floor.Audiences)
+	// if err == nil {
+	// 	err := s.Store.PostGraphs(graphArr)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in PostGraphs")
+	// 	} else {
+	// 		err = s.Store.PostStairs(graphArr)
+	// 		if err != nil {
+	// 			log.Println(err)
+	// 			return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in PostStairs")
+	// 		}
+	// 	}
+	// } else {
+
+	// }
+
 	return err
 }
 
@@ -126,9 +129,23 @@ func (s *API) GetAllFloorsHandler(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-// func (s *API) UpdateFloor(c *fiber.Ctx) error {
+func (s *API) PutFloorHandler(c *fiber.Ctx) error {
+	id := c.Query("id")
+	data := new(models.FloorPut)
 
-// }
+	if err := c.BodyParser(data); err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
+	}
+
+	err := s.Store.UpdateFloor(*data, id)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in UpdateFloor")
+	}
+
+	return err
+}
 
 func (s *API) DeleteFloorHandler(c *fiber.Ctx) error {
 	id := c.Query("id")

@@ -53,12 +53,15 @@ func (s *API) Run() error {
 	app.Post("/icon", s.PostIconHandler)
 	app.Post("/institute", s.PostInstituteHandler)
 	app.Post("/floor", s.PostFloorFromFileHandler)
+	app.Put("/institute", s.PutInstituteHandler)
+	app.Put("/floor", s.PutFloorHandler)
+	app.Put("/graph", s.PutGraphHandler)
+	app.Put("/stair", s.PutStairHandler)
 	app.Delete("/icon", s.DeleteIconHandler)
 	app.Delete("/institute", s.DeleteInstituteHandler)
 	app.Delete("/floor", s.DeleteFloorHandler)
 	app.Delete("/graph", s.DeleteGraphHandler)
 	app.Delete("/stair", s.DeleteStairHandler)
-	app.Put("/institute", s.PutInstituteHandler)
 
 	return app.Listen(s.Port)
 }

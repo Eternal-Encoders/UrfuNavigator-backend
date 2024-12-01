@@ -86,7 +86,7 @@ func (s *MongoDB) GetAllInstituteIcons() ([]models.InstituteIcon, error) {
 	return result, nil
 }
 
-func (s *MongoDB) PostInstituteIcon(icon models.InstituteIconRequest) error {
+func (s *MongoDB) PostInstituteIcon(icon models.InstituteIconGet) error {
 	collection := s.Database.Collection("media")
 
 	_, err := collection.InsertOne(context.TODO(), icon)

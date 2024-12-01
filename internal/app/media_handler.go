@@ -38,7 +38,7 @@ func (s *API) GetIconHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).SendString("Cannot find media by id")
 	}
 
-	response := models.InstituteIconResponse{
+	response := models.InstituteIconPost{
 		Id:  icon[0].Id.Hex(),
 		Url: icon[0].Url,
 		Alt: icon[0].Alt,
@@ -54,9 +54,9 @@ func (s *API) GetAllIconsHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in GetAllInstituteIcons")
 	}
 
-	response := []models.InstituteIconResponse{}
+	response := []models.InstituteIconPost{}
 	for _, icon := range icons {
-		response = append(response, models.InstituteIconResponse{
+		response = append(response, models.InstituteIconPost{
 			Id:  icon.Id.Hex(),
 			Url: icon.Url,
 			Alt: icon.Alt,
@@ -84,7 +84,7 @@ func (s *API) PostIconHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusConflict).SendString("There is a file in bucket with this name")
 	}
 
-	err = s.Store.PostInstituteIcon(models.InstituteIconRequest{
+	err = s.Store.PostInstituteIcon(models.InstituteIconGet{
 		Url: url,
 		Alt: name,
 	})

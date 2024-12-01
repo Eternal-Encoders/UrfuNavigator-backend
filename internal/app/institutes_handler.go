@@ -3,7 +3,6 @@ package app
 import (
 	"UrfuNavigator-backend/internal/models"
 	"UrfuNavigator-backend/internal/utils"
-	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -34,7 +33,7 @@ func (s *API) GetInstituteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).SendString("Cannot find media by id")
 	}
 
-	response := models.InstituteResponse{
+	response := models.InstituteGet{
 		Id:              instituteData.Id.Hex(),
 		Name:            instituteData.Name,
 		DisplayableName: instituteData.DisplayableName,
@@ -72,9 +71,9 @@ func (s *API) GetAllInstitutesHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).SendString("For some of the institutes icons not founded")
 	}
 
-	response := []models.InstituteResponse{}
+	response := []models.InstituteGet{}
 	for i, institue := range institutesData {
-		response = append(response, models.InstituteResponse{
+		response = append(response, models.InstituteGet{
 			Id:              institue.Id.Hex(),
 			Name:            institue.Name,
 			DisplayableName: institue.DisplayableName,
@@ -91,7 +90,7 @@ func (s *API) GetAllInstitutesHandler(c *fiber.Ctx) error {
 }
 
 func (s *API) PostInstituteHandler(c *fiber.Ctx) error {
-	data := new(models.InstituteRequest)
+	data := new(models.InstitutePost)
 
 	if err := c.BodyParser(data); err != nil {
 		log.Println(err)
@@ -121,12 +120,11 @@ func (s *API) DeleteInstituteHandler(c *fiber.Ctx) error {
 
 func (s *API) PutInstituteHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
-	fmt.Println("Institute ID:", id)
-	data := new(models.InstituteRequest)
+	data := new(models.InstitutePost)
 
 	if err := c.BodyParser(data); err != nil {
 		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something wrong with request body")
+		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
 	}
 
 	err := s.Store.UpdateInstitute(*data, id)

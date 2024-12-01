@@ -34,6 +34,16 @@ type FloorRequest struct {
 	Graph     []string      `json:"graph"`
 }
 
+type FloorPut struct {
+	Institute string        `json:"institute"`
+	Floor     int           `json:"floor"`
+	Width     int           `json:"width"`
+	Height    int           `json:"height"`
+	Audiences []*Auditorium `json:"audiences"`
+	Service   []*Service    `json:"service"`
+	Graph     []string      `json:"graph"`
+}
+
 type FloorFromFile struct {
 	Institute string                 `json:"institute"`
 	Floor     int                    `json:"floor"`
