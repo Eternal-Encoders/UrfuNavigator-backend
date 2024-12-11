@@ -28,10 +28,10 @@ func (s *API) GetIconImageHandler(c *fiber.Ctx) error {
 
 func (s *API) GetIconHandler(c *fiber.Ctx) error {
 	iconName := c.Query("id")
-	icon, err := s.Store.GetInstituteIcons([]string{iconName})
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in GetInstituteIcons")
+	icon, res := s.Store.GetInstituteIcons([]string{iconName})
+	if res.Error != nil {
+		log.Println(res.Error)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 	if len(icon) != 1 {
 		log.Println("There is too many or no media with id")
@@ -48,10 +48,10 @@ func (s *API) GetIconHandler(c *fiber.Ctx) error {
 }
 
 func (s *API) GetAllIconsHandler(c *fiber.Ctx) error {
-	icons, err := s.Store.GetAllInstituteIcons()
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in GetAllInstituteIcons")
+	icons, res := s.Store.GetAllInstituteIcons()
+	if res.Error != nil {
+		log.Println(res.Error)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
 	response := []models.InstituteIconPost{}
@@ -84,32 +84,33 @@ func (s *API) PostIconHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusConflict).SendString("There is a file in bucket with this name")
 	}
 
-	err = s.Store.PostInstituteIcon(models.InstituteIconGet{
+	res := s.Store.PostInstituteIcon(models.InstituteIconGet{
 		Url: url,
 		Alt: name,
 	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in PostInstituteIcon")
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(200).SendString("successfully loaded")
 }
 
 func (s *API) DeleteIconHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
 	log.Println(id)
-	name, err := s.Store.DeleteInstituteIcon(id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in DeleteInstituteIcon")
+	name, res := s.Store.DeleteInstituteIcon(id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	err = s.ObjectStore.DeleteFile(name)
+	err := s.ObjectStore.DeleteFile(name)
 	if err != nil {
-		log.Println(err)
+		log.Println(res)
 		return c.Status(fiber.StatusBadRequest).SendString("Error occured while deleting file from bucket")
 	}
-	return err
+
+	return c.Status(200).SendString("successfully deleted")
 }

@@ -31,12 +31,12 @@ func GetAddedDeleted(oldSlice []string, newSlice []string) ([]string, []string) 
 	return added, deleted
 }
 
-func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Stair, graphsCol *mongo.Collection, stairsCol *mongo.Collection) error {
+func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Stair, graphsCol *mongo.Collection, stairsCol *mongo.Collection) models.ResponseType {
 	var graphs []models.GraphPoint
 	start := time.Now()
 
 	if len(graphsId) == 0 {
-		return nil
+		return models.ResponseType{Type: 200, Error: nil}
 	}
 
 	filter := bson.M{
@@ -47,18 +47,19 @@ func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Sta
 
 	cur, err := graphsCol.Find(ctx, filter)
 	if err != nil {
-		return err
+		return models.ResponseType{Type: 500, Error: err}
 	}
 
 	err = cur.All(ctx, &graphs)
 	if err != nil {
-		return err
+		return models.ResponseType{Type: 500, Error: err}
 	}
 
 	cur.Close(ctx)
 
 	if len(graphs) < len(graphsId) {
-		return errors.New("some graph point is missing in database")
+		err = errors.New("some graph point is missing in database")
+		return models.ResponseType{Type: 404, Error: err}
 	}
 
 	for _, graph := range graphs {
@@ -71,14 +72,19 @@ func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Sta
 		// }
 
 		if graph.Institute != stair.Institute {
-			return errors.New("graph point and stair have different institute values")
+			err = errors.New("graph point and stair have different institute values")
+			return models.ResponseType{Type: 406, Error: err}
 		}
 
 		if slices.Contains(graph.Types, "stair") {
 			var oldStair models.Stair
 			err = stairsCol.FindOne(ctx, bson.M{"_id": graph.StairId}).Decode(&oldStair)
 			if err != nil {
-				return err
+				if err == models.ErrNoDocuments {
+					return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + graph.StairId)}
+				} else {
+					return models.ResponseType{Type: 500, Error: err}
+				}
 			}
 
 			graphIndex := GetIndex(oldStair.Links, graph.Id)
@@ -89,7 +95,11 @@ func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Sta
 
 			_, err = stairsCol.UpdateOne(context.TODO(), bson.M{"_id": oldStair.Id}, bson.M{"$set": bson.M{"links": newLinks}})
 			if err != nil {
-				return err
+				if err == models.ErrNoDocuments {
+					return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + oldStair.Id)}
+				} else {
+					return models.ResponseType{Type: 500, Error: err}
+				}
 			}
 		}
 
@@ -104,7 +114,11 @@ func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Sta
 
 		_, err = graphsCol.UpdateOne(ctx, bson.M{"_id": graph.Id}, bson.M{"$set": graph})
 		if err != nil {
-			return err
+			if err == models.ErrNoDocuments {
+				return models.ResponseType{Type: 404, Error: errors.New("there is no graph point with specified id: " + graph.Id)}
+			} else {
+				return models.ResponseType{Type: 500, Error: err}
+			}
 		}
 	}
 
@@ -112,5 +126,5 @@ func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Sta
 	elapsed := t.Sub(start)
 	log.Println(elapsed.Nanoseconds())
 
-	return nil
+	return models.ResponseType{Type: 200, Error: nil}
 }

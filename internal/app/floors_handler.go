@@ -56,10 +56,10 @@ func (s *API) PostFloorFromFileHandler(c *fiber.Ctx) error {
 		Graph:     graphKeysArr,
 	}
 
-	err = s.Store.PostFloor(floor, graphArr)
-	if err != nil {
+	res := s.Store.PostFloor(floor, graphArr)
+	if res.Error != nil {
 		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in PostFloor")
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
 	// if err == nil {
@@ -78,17 +78,17 @@ func (s *API) PostFloorFromFileHandler(c *fiber.Ctx) error {
 
 	// }
 
-	return err
+	return c.Status(res.Type).SendString("successfully created")
 }
 
 func (s *API) GetFloorHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 	log.Println(id)
 
-	floorData, err := s.Store.GetFloor(id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetFloor")
+	floorData, res := s.Store.GetFloor(id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
 	response := models.FloorResponse{
@@ -106,10 +106,10 @@ func (s *API) GetFloorHandler(c *fiber.Ctx) error {
 }
 
 func (s *API) GetAllFloorsHandler(c *fiber.Ctx) error {
-	floorData, err := s.Store.GetAllFloors()
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetAllFloors")
+	floorData, res := s.Store.GetAllFloors()
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
 	response := []models.FloorResponse{}
@@ -138,23 +138,23 @@ func (s *API) PutFloorHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
 	}
 
-	err := s.Store.UpdateFloor(*data, id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in UpdateFloor")
+	res := s.Store.UpdateFloor(*data, id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(res.Type).SendString("successfully updated")
 }
 
 func (s *API) DeleteFloorHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	err := s.Store.DeleteFloor(id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in DeleteFloor")
+	res := s.Store.DeleteFloor(id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(res.Type).SendString("successfully deleted")
 }

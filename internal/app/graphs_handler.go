@@ -11,20 +11,20 @@ import (
 func (s *API) GetGraphHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	graphData, err := s.Store.GetGraph(id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetGraph")
+	graphData, res := s.Store.GetGraph(id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
 	return c.JSON(graphData)
 }
 
 func (s *API) GetAllGraphsHandler(c *fiber.Ctx) error {
-	graphData, err := s.Store.GetAllGraphs()
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetAllGraphs")
+	graphData, res := s.Store.GetAllGraphs()
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
 	return c.JSON(graphData)
@@ -39,23 +39,23 @@ func (s *API) PutGraphHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
 	}
 
-	err := s.Store.UpdateGraph(context.TODO(), *data, id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in UpdateGraph")
+	res := s.Store.UpdateGraph(context.TODO(), *data, id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(res.Type).SendString("successfully updated")
 }
 
 func (s *API) DeleteGraphHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	err := s.Store.DeleteGraph(id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in DeleteGraph")
+	res := s.Store.DeleteGraph(id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(res.Type).SendString("successfully deleted")
 }

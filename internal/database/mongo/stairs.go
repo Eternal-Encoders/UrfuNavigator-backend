@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func (s *MongoDB) PostStairs(context context.Context, graphs []*models.GraphPoint) error {
+func (s *MongoDB) PostStairs(context context.Context, graphs []*models.GraphPoint) models.ResponseType {
 	collection := s.Database.Collection("stairs")
 
 	wc := writeconcern.New(writeconcern.WMajority())
@@ -23,12 +23,12 @@ func (s *MongoDB) PostStairs(context context.Context, graphs []*models.GraphPoin
 	session, err := s.Client.StartSession()
 	if err != nil {
 		log.Println("Something went wrong while starting new session")
-		return err
+		return models.ResponseType{Type: 500, Error: err}
 	}
 
 	defer session.EndSession(context)
 
-	_, err = session.WithTransaction(context, func(ctx mongo.SessionContext) (interface{}, error) {
+	res, _ := session.WithTransaction(context, func(ctx mongo.SessionContext) (interface{}, error) {
 		var stairsForInsert []models.Stair
 		var stairIds []string
 		var existingStairs []models.Stair
@@ -87,7 +87,7 @@ func (s *MongoDB) PostStairs(context context.Context, graphs []*models.GraphPoin
 			_, err := collection.InsertMany(ctx, insertRes)
 			if err != nil {
 				log.Println("stair insertion error")
-				return nil, err
+				return models.ResponseType{Type: 500, Error: err}, err
 			}
 		}
 
@@ -95,17 +95,22 @@ func (s *MongoDB) PostStairs(context context.Context, graphs []*models.GraphPoin
 			_, err := collection.UpdateOne(ctx, bson.M{"_id": stair.Id}, bson.M{"$set": stair})
 			if err != nil {
 				log.Println("stair update error")
-				return nil, err
+				if err == models.ErrNoDocuments {
+					return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + stair.Id)}, err
+				} else {
+					return models.ResponseType{Type: 500, Error: err}, err
+				}
 			}
 		}
 
-		return nil, nil
+		return models.ResponseType{Type: 200, Error: nil}, nil
 	}, txnOptions)
 
-	return err
+	result := res.(models.ResponseType)
+	return models.ResponseType{Type: result.Type, Error: result.Error}
 }
 
-func (s *MongoDB) GetStair(id string) (models.Stair, error) {
+func (s *MongoDB) GetStair(id string) (models.Stair, models.ResponseType) {
 	collection := s.Database.Collection("stairs")
 
 	filter := bson.M{
@@ -114,15 +119,23 @@ func (s *MongoDB) GetStair(id string) (models.Stair, error) {
 
 	var result models.Stair
 	err := collection.FindOne(context.TODO(), filter).Decode(&result)
-	return result, err
+	if err != nil {
+		if err == models.ErrNoDocuments {
+			return models.Stair{}, models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + id)}
+		} else {
+			return models.Stair{}, models.ResponseType{Type: 500, Error: err}
+		}
+	}
+
+	return result, models.ResponseType{Type: 200, Error: nil}
 }
 
-func (s *MongoDB) GetAllStairs() ([]models.Stair, error) {
+func (s *MongoDB) GetAllStairs() ([]models.Stair, models.ResponseType) {
 	collection := s.Database.Collection("stairs")
 
 	cursor, err := collection.Find(context.TODO(), bson.M{})
 	if err != nil {
-		return nil, err
+		return nil, models.ResponseType{Type: 500, Error: err}
 	}
 
 	defer cursor.Close(context.TODO())
@@ -130,13 +143,13 @@ func (s *MongoDB) GetAllStairs() ([]models.Stair, error) {
 	var result []models.Stair
 	decodeErr := cursor.All(context.TODO(), &result)
 	if decodeErr != nil {
-		return nil, decodeErr
+		return nil, models.ResponseType{Type: 500, Error: decodeErr}
 	}
 
-	return result, nil
+	return result, models.ResponseType{Type: 200, Error: nil}
 }
 
-func (s *MongoDB) UpdateStair(context context.Context, body models.Stair, id string) error {
+func (s *MongoDB) UpdateStair(context context.Context, body models.Stair, id string) models.ResponseType {
 	stairsCol := s.Database.Collection("stairs")
 	graphsCol := s.Database.Collection("graph_points")
 
@@ -146,23 +159,28 @@ func (s *MongoDB) UpdateStair(context context.Context, body models.Stair, id str
 	session, err := s.Client.StartSession()
 	if err != nil {
 		log.Println("Something went wrong while starting new session")
-		return err
+		return models.ResponseType{Type: 500, Error: err}
 	}
 
 	defer session.EndSession(context)
 
-	_, err = session.WithTransaction(context, func(ctx mongo.SessionContext) (interface{}, error) {
+	res, _ := session.WithTransaction(context, func(ctx mongo.SessionContext) (interface{}, error) {
 		stairFilter := bson.M{
 			"_id": id,
 		}
 		var oldStair models.Stair
 		err := stairsCol.FindOne(ctx, stairFilter).Decode(&oldStair)
 		if err != nil {
-			return nil, err
+			if err == models.ErrNoDocuments {
+				return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + id)}, err
+			} else {
+				return models.ResponseType{Type: 500, Error: err}, err
+			}
 		}
 
 		if body.Id != id || body.StairPoint != id {
-			return nil, errors.New("the specified id does not match with body id")
+			err = errors.New("the specified id does not match with body id")
+			return models.ResponseType{Type: 406, Error: err}, err
 		}
 
 		// if body.StairPoint != body.Id {
@@ -176,14 +194,14 @@ func (s *MongoDB) UpdateStair(context context.Context, body models.Stair, id str
 		added, deleted := utils.GetAddedDeleted(oldStair.Links, body.Links)
 
 		if body.Institute != oldStair.Institute {
-			err = utils.UpdateGraphsStairs(ctx, body.Links, body, graphsCol, stairsCol)
-			if err != nil {
-				return nil, err
+			res := utils.UpdateGraphsStairs(ctx, body.Links, body, graphsCol, stairsCol)
+			if res.Error != nil {
+				return res, res.Error
 			}
 		} else {
-			err = utils.UpdateGraphsStairs(ctx, added, body, graphsCol, stairsCol)
-			if err != nil {
-				return nil, err
+			res := utils.UpdateGraphsStairs(ctx, added, body, graphsCol, stairsCol)
+			if res.Error != nil {
+				return res, res.Error
 			}
 		}
 
@@ -197,12 +215,12 @@ func (s *MongoDB) UpdateStair(context context.Context, body models.Stair, id str
 
 			cur, err := graphsCol.Find(ctx, filter)
 			if err != nil {
-				return nil, err
+				return models.ResponseType{Type: 500, Error: err}, err
 			}
 
 			err = cur.All(ctx, &deletedGraphs)
 			if err != nil {
-				return nil, err
+				return models.ResponseType{Type: 500, Error: err}, err
 			}
 
 			cur.Close(ctx)
@@ -215,23 +233,32 @@ func (s *MongoDB) UpdateStair(context context.Context, body models.Stair, id str
 				}
 				_, err = graphsCol.UpdateOne(ctx, bson.M{"_id": graph.Id}, bson.M{"$set": bson.M{"stairId": "", "types": newTypes}})
 				if err != nil {
-					return nil, err
+					if err == models.ErrNoDocuments {
+						return models.ResponseType{Type: 404, Error: errors.New("there is no graph point with specified id: " + graph.Id)}, err
+					} else {
+						return models.ResponseType{Type: 500, Error: err}, err
+					}
 				}
 			}
 		}
 
 		_, err = stairsCol.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": body})
 		if err != nil {
-			return nil, err
+			if err == models.ErrNoDocuments {
+				return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + id)}, err
+			} else {
+				return models.ResponseType{Type: 500, Error: err}, err
+			}
 		}
 
-		return nil, nil
+		return models.ResponseType{Type: 200, Error: nil}, nil
 	}, txnOptions)
 
-	return err
+	result := res.(models.ResponseType)
+	return models.ResponseType{Type: result.Type, Error: result.Error}
 }
 
-func (s *MongoDB) DeleteStair(id string) error {
+func (s *MongoDB) DeleteStair(id string) models.ResponseType {
 	stairsCol := s.Database.Collection("stairs")
 	graphsCol := s.Database.Collection("graph_points")
 
@@ -241,19 +268,23 @@ func (s *MongoDB) DeleteStair(id string) error {
 	session, err := s.Client.StartSession()
 	if err != nil {
 		log.Println("Something went wrong while starting new session")
-		return err
+		return models.ResponseType{Type: 500, Error: err}
 	}
 
 	defer session.EndSession(context.TODO())
 
-	_, err = session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
+	res, _ := session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
 		stairFilter := bson.M{
 			"_id": id,
 		}
 		var stair models.Stair
 		err := stairsCol.FindOne(ctx, stairFilter).Decode(&stair)
 		if err != nil {
-			return nil, err
+			if err == models.ErrNoDocuments {
+				return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + id)}, err
+			} else {
+				return models.ResponseType{Type: 500, Error: err}, err
+			}
 		}
 		log.Println(stair.StairPoint)
 
@@ -263,7 +294,7 @@ func (s *MongoDB) DeleteStair(id string) error {
 			}
 			cursor, err := graphsCol.Find(ctx, graphFilter)
 			if err != nil {
-				return nil, err
+				return models.ResponseType{Type: 500, Error: err}, err
 			}
 
 			defer cursor.Close(ctx)
@@ -271,7 +302,7 @@ func (s *MongoDB) DeleteStair(id string) error {
 			var graphs []models.GraphPoint
 			decodeErr := cursor.All(ctx, &graphs)
 			if decodeErr != nil {
-				return nil, decodeErr
+				return models.ResponseType{Type: 500, Error: decodeErr}, decodeErr
 			}
 			// log.Println(graphs)
 
@@ -285,18 +316,23 @@ func (s *MongoDB) DeleteStair(id string) error {
 
 				_, err = graphsCol.UpdateOne(ctx, bson.M{"_id": v.Id}, bson.M{"$set": bson.M{"stairId": "", "types": newTypes}})
 				if err != nil {
-					return nil, err
+					if err == models.ErrNoDocuments {
+						return models.ResponseType{Type: 404, Error: errors.New("there is no graph point with specified id: " + v.Id)}, err
+					} else {
+						return models.ResponseType{Type: 500, Error: err}, err
+					}
 				}
 			}
 		}
 
 		_, err = stairsCol.DeleteOne(ctx, stairFilter)
 		if err != nil {
-			return nil, err
+			return models.ResponseType{Type: 500, Error: err}, err
 		}
 
-		return nil, nil
+		return models.ResponseType{Type: 200, Error: nil}, nil
 	}, txnOptions)
 
-	return err
+	result := res.(models.ResponseType)
+	return models.ResponseType{Type: result.Type, Error: result.Error}
 }

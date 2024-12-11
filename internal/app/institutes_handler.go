@@ -16,15 +16,15 @@ func (s *API) GetInstituteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Request must contain url query parameters")
 	}
 
-	instituteData, err := s.Store.GetInstitute(url)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetInstitute")
+	instituteData, res := s.Store.GetInstitute(url)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	iconData, iconErr := s.Store.GetInstituteIconsByName([]string{instituteData.Icon})
-	if iconErr != nil {
-		log.Println(iconErr)
+	iconData, iconResp := s.Store.GetInstituteIconsByName([]string{instituteData.Icon})
+	if iconResp.Error != nil {
+		log.Println(iconResp)
 		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetInstituteIcons")
 	}
 	if len(iconData) != 1 {
@@ -49,10 +49,10 @@ func (s *API) GetInstituteHandler(c *fiber.Ctx) error {
 }
 
 func (s *API) GetAllInstitutesHandler(c *fiber.Ctx) error {
-	institutesData, err := s.Store.GetAllInstitutes()
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetInstitute")
+	institutesData, res := s.Store.GetAllInstitutes()
+	if res.Error != nil {
+		log.Println(res.Error)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
 	iconIds := []string{}
@@ -60,10 +60,10 @@ func (s *API) GetAllInstitutesHandler(c *fiber.Ctx) error {
 		iconIds = append(iconIds, institute.Icon)
 	}
 
-	iconsData, err := s.Store.GetInstituteIcons(iconIds)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetInstituteIcons")
+	iconsData, iconResp := s.Store.GetInstituteIcons(iconIds)
+	if iconResp.Error != nil {
+		log.Println(iconResp)
+		return c.Status(res.Type).SendString(iconResp.Error.Error())
 	}
 
 	if len(iconsData) != len(institutesData) {
@@ -97,25 +97,25 @@ func (s *API) PostInstituteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Something wrong with request body")
 	}
 
-	err := s.Store.PostInstitute(*data)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
+	res := s.Store.PostInstitute(*data)
+	if res.Error != nil {
+		log.Println(res.Error)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(res.Type).SendString("successfully created")
 }
 
 func (s *API) DeleteInstituteHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	err := s.Store.DeleteInstitute(id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in DeleteInstitute")
+	res := s.Store.DeleteInstitute(id)
+	if res.Error != nil {
+		log.Println(res.Error)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(res.Type).SendString("successfully deleted")
 }
 
 func (s *API) PutInstituteHandler(c *fiber.Ctx) error {
@@ -127,11 +127,11 @@ func (s *API) PutInstituteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
 	}
 
-	err := s.Store.UpdateInstitute(*data, id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusBadRequest).SendString("Something went wrong in UpdateInstitute")
+	res := s.Store.UpdateInstitute(*data, id)
+	if res.Error != nil {
+		log.Println(res.Error)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(res.Type).SendString("successfully updated")
 }

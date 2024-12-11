@@ -11,20 +11,20 @@ import (
 func (s *API) GetStairHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	stairData, err := s.Store.GetStair(id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetStair")
+	stairData, res := s.Store.GetStair(id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
 	return c.JSON(stairData)
 }
 
 func (s *API) GetAllStairsHandler(c *fiber.Ctx) error {
-	stairData, err := s.Store.GetAllStairs()
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetAllStairs")
+	stairData, res := s.Store.GetAllStairs()
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
 	return c.JSON(stairData)
@@ -39,23 +39,23 @@ func (s *API) PutStairHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
 	}
 
-	err := s.Store.UpdateStair(context.TODO(), *data, id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in UpdateStair")
+	res := s.Store.UpdateStair(context.TODO(), *data, id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(res.Type).SendString("successfully updated")
 }
 
 func (s *API) DeleteStairHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	err := s.Store.DeleteStair(id)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetStair")
+	res := s.Store.DeleteStair(id)
+	if res.Error != nil {
+		log.Println(res)
+		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return err
+	return c.Status(res.Type).SendString("successfully deleted")
 }

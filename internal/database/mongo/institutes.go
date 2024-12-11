@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func (s *MongoDB) GetInstitute(url string) (models.Institute, error) {
+func (s *MongoDB) GetInstitute(url string) (models.Institute, models.ResponseType) {
 	collection := s.Database.Collection("insitutes")
 	log.Println(url)
 	filter := bson.M{
@@ -24,15 +24,23 @@ func (s *MongoDB) GetInstitute(url string) (models.Institute, error) {
 	var result models.Institute
 	err := collection.FindOne(context.TODO(), filter).Decode(&result)
 
-	return result, err
+	if err != nil {
+		if err == models.ErrNoDocuments {
+			return result, models.ResponseType{Type: 404, Error: errors.New("there is no institute with specified url: " + url)}
+		} else {
+			return result, models.ResponseType{Type: 500, Error: err}
+		}
+	}
+
+	return result, models.ResponseType{Type: 200, Error: nil}
 }
 
-func (s *MongoDB) GetAllInstitutes() ([]models.Institute, error) {
+func (s *MongoDB) GetAllInstitutes() ([]models.Institute, models.ResponseType) {
 	collection := s.Database.Collection("institutes")
 
 	cursor, err := collection.Find(context.TODO(), bson.M{})
 	if err != nil {
-		return nil, err
+		return nil, models.ResponseType{Type: 500, Error: err}
 	}
 
 	defer cursor.Close(context.TODO())
@@ -40,29 +48,35 @@ func (s *MongoDB) GetAllInstitutes() ([]models.Institute, error) {
 	var result []models.Institute
 	decodeErr := cursor.All(context.TODO(), &result)
 	if decodeErr != nil {
-		return nil, decodeErr
+		return nil, models.ResponseType{Type: 500, Error: err}
 	}
-	// log.Println(result[0].Id)
+	// if len(result) == 0 {
+	// 	return nil, models.ResponseType{Type: 404, Error: errors.New("there are no institutes")}
+	// }
 
-	return result, nil
+	return result, models.ResponseType{Type: 200, Error: nil}
 }
 
-func (s *MongoDB) PostInstitute(institute models.InstitutePost) error {
+func (s *MongoDB) PostInstitute(institute models.InstitutePost) models.ResponseType {
 	collection := s.Database.Collection("institutes")
 	// iconCol := s.Database.Collection("media")
 
 	filter := bson.M{"name": institute.Name}
-	// log.Println(filter)
+
 	err := collection.FindOne(context.TODO(), filter).Err()
 	if err == nil {
-		return errors.New("institute already exists")
+		return models.ResponseType{Type: 406, Error: errors.New("institute already exists")}
 	}
 
 	_, err = collection.InsertOne(context.TODO(), institute)
-	return err
+	if err == nil {
+		return models.ResponseType{Type: 500, Error: err}
+	}
+
+	return models.ResponseType{Type: 200, Error: nil}
 }
 
-func (s *MongoDB) UpdateInstitute(body models.InstitutePost, id string) error {
+func (s *MongoDB) UpdateInstitute(body models.InstitutePost, id string) models.ResponseType {
 	instituteCol := s.Database.Collection("insitutes")
 	floorsCol := s.Database.Collection("floors")
 	graphsCol := s.Database.Collection("graph_points")
@@ -75,28 +89,33 @@ func (s *MongoDB) UpdateInstitute(body models.InstitutePost, id string) error {
 	session, err := s.Client.StartSession()
 	if err != nil {
 		log.Println("Something went wrong while starting new session")
-		return err
+		return models.ResponseType{Type: 500, Error: err}
 	}
 
 	defer session.EndSession(context.TODO())
 
-	_, err = session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
+	res, _ := session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
 		objId, err := primitive.ObjectIDFromHex(id)
 		if err != nil {
-			return nil, err
+			return models.ResponseType{Type: 500, Error: err}, err
 		}
 		filter := bson.M{
 			"_id": objId,
 		}
 
 		if body.Name == "" {
-			return nil, errors.New("institute name can not be empty")
+			err = errors.New("institute name can not be empty")
+			return models.ResponseType{Type: 406, Error: err}, err
 		}
 
 		var oldInstitute models.Institute
 		err = instituteCol.FindOne(ctx, filter).Decode(&oldInstitute)
 		if err != nil {
-			return nil, err
+			if err == models.ErrNoDocuments {
+				return models.ResponseType{Type: 404, Error: errors.New("there is no institute with specified id: " + id)}, err
+			} else {
+				return models.ResponseType{Type: 500, Error: err}, err
+			}
 		}
 
 		if oldInstitute.Name != body.Name || oldInstitute.MaxFloor != body.MaxFloor || oldInstitute.MinFloor != body.MinFloor {
@@ -104,64 +123,74 @@ func (s *MongoDB) UpdateInstitute(body models.InstitutePost, id string) error {
 
 			cur, err := floorsCol.Find(ctx, bson.M{"institute": oldInstitute.Name})
 			if err != nil {
-				return nil, err
+				return models.ResponseType{Type: 500, Error: err}, err
 			}
 
 			err = cur.All(ctx, &floors)
 			if err != nil {
-				return nil, err
+				return models.ResponseType{Type: 500, Error: err}, err
 			}
 			cur.Close(ctx)
 
+			// if len(floors) == 0 {
+			// 	return models.ResponseType{Type: 404, Error: errors.New("there are no floors with specified institute: " + oldInstitute.Name)}, err
+			// }
+
 			for _, floor := range floors {
 				if body.MinFloor > floor.Floor || floor.Floor > body.MaxFloor {
-					return nil, errors.New("there is a floor out of new floor bounds")
+					err = errors.New("there is a floor out of new floor bounds")
+					return models.ResponseType{Type: 406, Error: err}, err
 				}
 
 				_, err = graphsCol.UpdateMany(ctx, bson.M{"institute": oldInstitute.Name, "floor": floor.Floor},
 					bson.M{"$set": bson.M{"institute": body.Name}})
 				if err != nil {
-					return nil, err
+					return models.ResponseType{Type: 500, Error: err}, err
 				}
 			}
 
 			_, err = stairsCol.UpdateMany(ctx, bson.M{"institute": oldInstitute.Name}, bson.M{"$set": bson.M{"institute": body.Name}})
 			if err != nil {
-				return nil, err
+				return models.ResponseType{Type: 500, Error: err}, err
 			}
 
 			_, err = floorsCol.UpdateMany(ctx, bson.M{"institute": oldInstitute.Name}, bson.M{"$set": bson.M{"institute": body.Name}})
 			if err != nil {
-				return nil, err
+				return models.ResponseType{Type: 500, Error: err}, err
 			}
 		}
 
 		if oldInstitute.Icon != body.Icon {
 			err = mediaCol.FindOne(ctx, bson.M{"url": oldInstitute.Icon}).Err()
 			if err != nil {
-				return nil, err
+				if err == models.ErrNoDocuments {
+					return models.ResponseType{Type: 404, Error: errors.New("there is no icon with specified name: " + oldInstitute.Icon)}, err
+				} else {
+					return models.ResponseType{Type: 500, Error: err}, err
+				}
 			}
 		}
 
 		_, err = instituteCol.UpdateOne(ctx, filter, bson.M{"$set": body})
 		fmt.Println(err != nil)
 		if err != nil {
-			return nil, err
+			return models.ResponseType{Type: 500, Error: err}, err
 		}
 
-		return nil, nil
+		return models.ResponseType{Type: 200, Error: nil}, nil
 	}, txnOptions)
 
-	return err
+	result := res.(models.ResponseType)
+	return models.ResponseType{Type: result.Type, Error: result.Error}
 }
 
-func (s *MongoDB) DeleteInstitute(id string) error {
+func (s *MongoDB) DeleteInstitute(id string) models.ResponseType {
 	collection := s.Database.Collection("institutes")
 	floorsCol := s.Database.Collection("floors")
 
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return err
+		return models.ResponseType{Type: 500, Error: err}
 	}
 	filter := bson.M{
 		"_id": objId,
@@ -169,13 +198,24 @@ func (s *MongoDB) DeleteInstitute(id string) error {
 
 	var institute models.Institute
 	if err = collection.FindOne(context.TODO(), filter).Decode(&institute); err != nil {
-		return err
+		if err == models.ErrNoDocuments {
+			return models.ResponseType{Type: 404, Error: errors.New("there is no institute with specified id: " + id)}
+		} else {
+			return models.ResponseType{Type: 500, Error: err}
+		}
 	}
 
 	if err = floorsCol.FindOne(context.TODO(), bson.M{"institute": institute.Name}).Err(); err == nil {
-		return errors.New("can not delete institute with floors")
+		if err == models.ErrNoDocuments {
+			return models.ResponseType{Type: 404, Error: errors.New("there is no floor with specified institute: " + institute.Name)}
+		} else {
+			return models.ResponseType{Type: 500, Error: err}
+		}
 	}
 
 	_, err = collection.DeleteOne(context.TODO(), filter)
-	return err
+	if err != nil {
+		return models.ResponseType{Type: 500, Error: err}
+	}
+	return models.ResponseType{Type: 200, Error: nil}
 }
