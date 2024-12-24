@@ -16,7 +16,6 @@ import (
 
 func (s *MongoDB) GetInstitute(url string) (models.Institute, models.ResponseType) {
 	collection := s.Database.Collection("insitutes")
-	log.Println(url)
 	filter := bson.M{
 		"url": url,
 	}
@@ -36,7 +35,7 @@ func (s *MongoDB) GetInstitute(url string) (models.Institute, models.ResponseTyp
 }
 
 func (s *MongoDB) GetAllInstitutes() ([]models.Institute, models.ResponseType) {
-	collection := s.Database.Collection("institutes")
+	collection := s.Database.Collection("insitutes")
 
 	cursor, err := collection.Find(context.TODO(), bson.M{})
 	if err != nil {
@@ -58,7 +57,7 @@ func (s *MongoDB) GetAllInstitutes() ([]models.Institute, models.ResponseType) {
 }
 
 func (s *MongoDB) PostInstitute(institute models.InstitutePost) models.ResponseType {
-	collection := s.Database.Collection("institutes")
+	collection := s.Database.Collection("insitutes")
 	// iconCol := s.Database.Collection("media")
 
 	filter := bson.M{"name": institute.Name}
@@ -69,7 +68,7 @@ func (s *MongoDB) PostInstitute(institute models.InstitutePost) models.ResponseT
 	}
 
 	_, err = collection.InsertOne(context.TODO(), institute)
-	if err == nil {
+	if err != nil {
 		return models.ResponseType{Type: 500, Error: err}
 	}
 
@@ -185,7 +184,7 @@ func (s *MongoDB) UpdateInstitute(body models.InstitutePost, id string) models.R
 }
 
 func (s *MongoDB) DeleteInstitute(id string) models.ResponseType {
-	collection := s.Database.Collection("institutes")
+	collection := s.Database.Collection("insitutes")
 	floorsCol := s.Database.Collection("floors")
 
 	objId, err := primitive.ObjectIDFromHex(id)
