@@ -24,7 +24,7 @@ func (s *MongoDB) GetInstitute(url string) (models.Institute, models.ResponseTyp
 	err := collection.FindOne(context.TODO(), filter).Decode(&result)
 
 	if err != nil {
-		if err == models.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments {
 			return result, models.ResponseType{Type: 404, Error: errors.New("there is no institute with specified url: " + url)}
 		} else {
 			return result, models.ResponseType{Type: 500, Error: err}
@@ -110,7 +110,7 @@ func (s *MongoDB) UpdateInstitute(body models.InstitutePost, id string) models.R
 		var oldInstitute models.Institute
 		err = instituteCol.FindOne(ctx, filter).Decode(&oldInstitute)
 		if err != nil {
-			if err == models.ErrNoDocuments {
+			if err == mongo.ErrNoDocuments {
 				return models.ResponseType{Type: 404, Error: errors.New("there is no institute with specified id: " + id)}, err
 			} else {
 				return models.ResponseType{Type: 500, Error: err}, err
@@ -162,7 +162,7 @@ func (s *MongoDB) UpdateInstitute(body models.InstitutePost, id string) models.R
 		if oldInstitute.Icon != body.Icon {
 			err = mediaCol.FindOne(ctx, bson.M{"url": oldInstitute.Icon}).Err()
 			if err != nil {
-				if err == models.ErrNoDocuments {
+				if err == mongo.ErrNoDocuments {
 					return models.ResponseType{Type: 404, Error: errors.New("there is no icon with specified name: " + oldInstitute.Icon)}, err
 				} else {
 					return models.ResponseType{Type: 500, Error: err}, err
@@ -197,7 +197,7 @@ func (s *MongoDB) DeleteInstitute(id string) models.ResponseType {
 
 	var institute models.Institute
 	if err = collection.FindOne(context.TODO(), filter).Decode(&institute); err != nil {
-		if err == models.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments {
 			return models.ResponseType{Type: 404, Error: errors.New("there is no institute with specified id: " + id)}
 		} else {
 			return models.ResponseType{Type: 500, Error: err}
@@ -205,7 +205,7 @@ func (s *MongoDB) DeleteInstitute(id string) models.ResponseType {
 	}
 
 	if err = floorsCol.FindOne(context.TODO(), bson.M{"institute": institute.Name}).Err(); err == nil {
-		if err == models.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments {
 			return models.ResponseType{Type: 404, Error: errors.New("there is no floor with specified institute: " + institute.Name)}
 		} else {
 			return models.ResponseType{Type: 500, Error: err}

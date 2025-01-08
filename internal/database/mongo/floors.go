@@ -77,7 +77,7 @@ func (s *MongoDB) GetFloor(id string) (models.Floor, models.ResponseType) {
 	var result models.Floor
 	err = collection.FindOne(context.TODO(), filter).Decode(&result)
 	if err != nil {
-		if err == models.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments {
 			return models.Floor{}, models.ResponseType{Type: 404, Error: errors.New("there is no floor with specified id: " + id)}
 		} else {
 			return models.Floor{}, models.ResponseType{Type: 500, Error: err}
@@ -140,7 +140,7 @@ func (s *MongoDB) UpdateFloor(body models.FloorPut, id string) models.ResponseTy
 		var oldFloor models.Floor
 		err = floorsCol.FindOne(ctx, filter).Decode(&oldFloor)
 		if err != nil {
-			if err == models.ErrNoDocuments {
+			if err == mongo.ErrNoDocuments {
 				return models.ResponseType{Type: 404, Error: errors.New("there is no floor with specified id: " + id)}, err
 			} else {
 				return models.ResponseType{Type: 500, Error: err}, err
@@ -208,7 +208,7 @@ func (s *MongoDB) UpdateFloor(body models.FloorPut, id string) models.ResponseTy
 
 			err = institutesCol.FindOne(ctx, instituteFilter).Decode(&newInstitute)
 			if err != nil {
-				if err == models.ErrNoDocuments {
+				if err == mongo.ErrNoDocuments {
 					return models.ResponseType{Type: 404, Error: errors.New("there is no institute with specified name: " + body.Institute)}, err
 				} else {
 					return models.ResponseType{Type: 500, Error: err}, err
@@ -221,7 +221,7 @@ func (s *MongoDB) UpdateFloor(body models.FloorPut, id string) models.ResponseTy
 			}
 
 			if err = floorsCol.FindOne(ctx, bson.M{"institute": body.Institute, "floor": body.Floor}).Err(); err == nil {
-				if err == models.ErrNoDocuments {
+				if err == mongo.ErrNoDocuments {
 					return models.ResponseType{Type: 404, Error: errors.New("there is no floor with specified institute and floor: " + body.Institute + ", " + strconv.Itoa(body.Floor))}, err
 				} else {
 					return models.ResponseType{Type: 500, Error: err}, err
@@ -232,7 +232,7 @@ func (s *MongoDB) UpdateFloor(body models.FloorPut, id string) models.ResponseTy
 
 			err = institutesCol.FindOne(ctx, bson.M{"name": body.Institute}).Decode(&oldInstitute)
 			if err != nil {
-				if err == models.ErrNoDocuments {
+				if err == mongo.ErrNoDocuments {
 					return models.ResponseType{Type: 404, Error: errors.New("there is no institute with specified name: " + body.Institute)}, err
 				} else {
 					return models.ResponseType{Type: 500, Error: err}, err
@@ -297,7 +297,7 @@ func (s *MongoDB) UpdateFloor(body models.FloorPut, id string) models.ResponseTy
 
 						_, err = stairsCol.UpdateOne(ctx, bson.M{"_id": graph.StairId}, bson.M{"$set": bson.M{"links": stairLinks}})
 						if err != nil {
-							if err == models.ErrNoDocuments {
+							if err == mongo.ErrNoDocuments {
 								return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + graph.StairId)}, err
 							} else {
 								return models.ResponseType{Type: 500, Error: err}, err
@@ -307,7 +307,7 @@ func (s *MongoDB) UpdateFloor(body models.FloorPut, id string) models.ResponseTy
 
 					_, err = graphsCol.UpdateOne(ctx, bson.M{"_id": graph.Id}, bson.M{"$set": graph})
 					if err != nil {
-						if err == models.ErrNoDocuments {
+						if err == mongo.ErrNoDocuments {
 							return models.ResponseType{Type: 404, Error: errors.New("there is no graph point with specified id: " + graph.Id)}, err
 						} else {
 							return models.ResponseType{Type: 500, Error: err}, err
@@ -412,7 +412,7 @@ func (s *MongoDB) DeleteFloor(id string) models.ResponseType {
 		var floor models.Floor
 		err = floorsCol.FindOne(ctx, floorFilter).Decode(&floor)
 		if err != nil {
-			if err == models.ErrNoDocuments {
+			if err == mongo.ErrNoDocuments {
 				return models.ResponseType{Type: 404, Error: errors.New("there is no floor with specified id: " + id)}, err
 			} else {
 				return models.ResponseType{Type: 500, Error: err}, err
@@ -447,7 +447,7 @@ func (s *MongoDB) DeleteFloor(id string) models.ResponseType {
 					var stair models.Stair
 					err = stairsCol.FindOne(ctx, stairFilter).Decode(&stair)
 					if err != nil {
-						if err == models.ErrNoDocuments {
+						if err == mongo.ErrNoDocuments {
 							return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + graph.StairId)}, err
 						} else {
 							return models.ResponseType{Type: 500, Error: err}, err

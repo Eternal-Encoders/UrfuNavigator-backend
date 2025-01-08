@@ -3,8 +3,6 @@ package database
 import (
 	"UrfuNavigator-backend/internal/models"
 	"context"
-
-	"github.com/golang-jwt/jwt"
 )
 
 type Store interface {
@@ -19,6 +17,8 @@ type Store interface {
 	GetAllGraphs() ([]models.GraphPoint, models.ResponseType)
 	GetStair(id string) (models.Stair, models.ResponseType)
 	GetAllStairs() ([]models.Stair, models.ResponseType)
+	GetUser(email string) (models.UserDB, models.ResponseType)
+	GetAllUsers() ([]models.UserDB, models.ResponseType)
 
 	PostInstituteIcon(models.InstituteIconGet) models.ResponseType
 	PostInstitute(models.InstitutePost) models.ResponseType
@@ -37,7 +37,7 @@ type Store interface {
 	UpdateGraph(context context.Context, body models.GraphPointPut, id string) models.ResponseType
 	UpdateStair(context context.Context, body models.Stair, id string) models.ResponseType
 
-	Login(body models.User) (models.ResponseType, *jwt.Token)
+	// Login(body models.User) (models.ResponseType, *jwt.Token)
 	Register(body models.UserDB) models.ResponseType
-	Logout() models.ResponseType
+	// Logout() models.ResponseType
 }

@@ -80,7 +80,7 @@ func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Sta
 			var oldStair models.Stair
 			err = stairsCol.FindOne(ctx, bson.M{"_id": graph.StairId}).Decode(&oldStair)
 			if err != nil {
-				if err == models.ErrNoDocuments {
+				if err == mongo.ErrNoDocuments {
 					return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + graph.StairId)}
 				} else {
 					return models.ResponseType{Type: 500, Error: err}
@@ -95,7 +95,7 @@ func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Sta
 
 			_, err = stairsCol.UpdateOne(context.TODO(), bson.M{"_id": oldStair.Id}, bson.M{"$set": bson.M{"links": newLinks}})
 			if err != nil {
-				if err == models.ErrNoDocuments {
+				if err == mongo.ErrNoDocuments {
 					return models.ResponseType{Type: 404, Error: errors.New("there is no stair with specified id: " + oldStair.Id)}
 				} else {
 					return models.ResponseType{Type: 500, Error: err}
@@ -114,7 +114,7 @@ func UpdateGraphsStairs(ctx context.Context, graphsId []string, stair models.Sta
 
 		_, err = graphsCol.UpdateOne(ctx, bson.M{"_id": graph.Id}, bson.M{"$set": graph})
 		if err != nil {
-			if err == models.ErrNoDocuments {
+			if err == mongo.ErrNoDocuments {
 				return models.ResponseType{Type: 404, Error: errors.New("there is no graph point with specified id: " + graph.Id)}
 			} else {
 				return models.ResponseType{Type: 500, Error: err}

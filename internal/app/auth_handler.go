@@ -3,8 +3,11 @@ package app
 import (
 	"UrfuNavigator-backend/internal/models"
 	"log"
+	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -41,12 +44,26 @@ func (s *API) LoginHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Error occured while loading body from request")
 	}
 
-	res, token := s.Store.Login(data)
+	user, res := s.Store.GetUser(data.Email)
 	if res.Error != nil {
 		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	return c.Status(res.Type).JSON(token)
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Hash), []byte(data.Password)); err != nil {
+		return c.Status(406).SendString("wrong password")
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+		Issuer:    user.Email,
+		ExpiresAt: time.Now().Add(time.Hour * 24 * 14).Unix(),
+	})
+
+	t, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+
+	return c.Status(200).JSON(t)
 }
 
 // func (s *API) LogoutHandler(c *fiber.Ctx) error {

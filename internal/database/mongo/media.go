@@ -8,6 +8,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func (s *MongoDB) GetInstituteIcons(ids []string) ([]models.InstituteIcon, models.ResponseType) {
@@ -29,7 +30,7 @@ func (s *MongoDB) GetInstituteIcons(ids []string) ([]models.InstituteIcon, model
 	}
 	curs, err := collection.Find(context.TODO(), filter)
 	if err != nil {
-		if err == models.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments {
 
 		} else {
 			return nil, models.ResponseType{Type: 500, Error: err}
@@ -129,7 +130,7 @@ func (s *MongoDB) DeleteInstituteIcon(id string) (string, models.ResponseType) {
 	var icon models.InstituteIcon
 	err = collection.FindOne(context.TODO(), filter).Decode(&icon)
 	if err != nil {
-		if err == models.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments {
 			return "", models.ResponseType{Type: 404, Error: errors.New("there is no icon with specified id: " + id)}
 		} else {
 			return "", models.ResponseType{Type: 500, Error: err}
