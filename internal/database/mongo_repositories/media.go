@@ -1,4 +1,4 @@
-package database
+package mongo
 
 import (
 	"UrfuNavigator-backend/internal/models"
@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func (s *MongoDB) GetInstituteIcons(ids []string) ([]models.InstituteIcon, models.ResponseType) {
+func (s *MongoDB) GetInstituteIconsById(context context.Context, ids []string) ([]models.InstituteIcon, models.ResponseType) {
 	collection := s.Database.Collection("media")
 
 	objIds := []primitive.ObjectID{}
@@ -28,7 +28,7 @@ func (s *MongoDB) GetInstituteIcons(ids []string) ([]models.InstituteIcon, model
 			"$in": objIds,
 		},
 	}
-	curs, err := collection.Find(context.TODO(), filter)
+	curs, err := collection.Find(context, filter)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 
@@ -37,10 +37,10 @@ func (s *MongoDB) GetInstituteIcons(ids []string) ([]models.InstituteIcon, model
 		}
 	}
 
-	defer curs.Close(context.TODO())
+	defer curs.Close(context)
 
 	var result []models.InstituteIcon
-	decodeErr := curs.All(context.TODO(), &result)
+	decodeErr := curs.All(context, &result)
 	if decodeErr != nil {
 		return nil, models.ResponseType{Type: 500, Error: decodeErr}
 	}
@@ -52,7 +52,7 @@ func (s *MongoDB) GetInstituteIcons(ids []string) ([]models.InstituteIcon, model
 	return result, models.ResponseType{Type: 200, Error: nil}
 }
 
-func (s *MongoDB) GetInstituteIconsByName(names []string) ([]models.InstituteIcon, models.ResponseType) {
+func (s *MongoDB) GetInstituteIconsByName(context context.Context, names []string) ([]models.InstituteIcon, models.ResponseType) {
 	collection := s.Database.Collection("media")
 
 	filter := bson.M{
@@ -60,15 +60,15 @@ func (s *MongoDB) GetInstituteIconsByName(names []string) ([]models.InstituteIco
 			"$in": names,
 		},
 	}
-	curs, err := collection.Find(context.TODO(), filter)
+	curs, err := collection.Find(context, filter)
 	if err != nil {
 		return nil, models.ResponseType{Type: 500, Error: err}
 	}
 
-	defer curs.Close(context.TODO())
+	defer curs.Close(context)
 
 	var result []models.InstituteIcon
-	decodeErr := curs.All(context.TODO(), &result)
+	decodeErr := curs.All(context, &result)
 	if decodeErr != nil {
 		return nil, models.ResponseType{Type: 500, Error: decodeErr}
 	}
@@ -80,18 +80,18 @@ func (s *MongoDB) GetInstituteIconsByName(names []string) ([]models.InstituteIco
 	return result, models.ResponseType{Type: 200, Error: nil}
 }
 
-func (s *MongoDB) GetAllInstituteIcons() ([]models.InstituteIcon, models.ResponseType) {
+func (s *MongoDB) GetAllInstituteIcons(context context.Context) ([]models.InstituteIcon, models.ResponseType) {
 	collection := s.Database.Collection("media")
 
-	cursor, err := collection.Find(context.TODO(), bson.M{})
+	cursor, err := collection.Find(context, bson.M{})
 	if err != nil {
 		return nil, models.ResponseType{Type: 500, Error: err}
 	}
 
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(context)
 
 	var result []models.InstituteIcon
-	decodeErr := cursor.All(context.TODO(), &result)
+	decodeErr := cursor.All(context, &result)
 	if decodeErr != nil {
 		return nil, models.ResponseType{Type: 500, Error: decodeErr}
 	}
@@ -104,10 +104,10 @@ func (s *MongoDB) GetAllInstituteIcons() ([]models.InstituteIcon, models.Respons
 	return result, models.ResponseType{Type: 200, Error: nil}
 }
 
-func (s *MongoDB) PostInstituteIcon(icon models.InstituteIconGet) models.ResponseType {
+func (s *MongoDB) InsertInstituteIcon(context context.Context, icon models.InstituteIconGet) models.ResponseType {
 	collection := s.Database.Collection("media")
 
-	_, err := collection.InsertOne(context.TODO(), icon)
+	_, err := collection.InsertOne(context, icon)
 	if err != nil {
 		return models.ResponseType{Type: 500, Error: err}
 	}
@@ -115,7 +115,7 @@ func (s *MongoDB) PostInstituteIcon(icon models.InstituteIconGet) models.Respons
 	return models.ResponseType{Type: 200, Error: nil}
 }
 
-func (s *MongoDB) DeleteInstituteIcon(id string) (string, models.ResponseType) {
+func (s *MongoDB) DeleteInstituteIcon(context context.Context, id string) (string, models.ResponseType) {
 	collection := s.Database.Collection("media")
 
 	objId, err := primitive.ObjectIDFromHex(id)
@@ -128,7 +128,7 @@ func (s *MongoDB) DeleteInstituteIcon(id string) (string, models.ResponseType) {
 	}
 
 	var icon models.InstituteIcon
-	err = collection.FindOne(context.TODO(), filter).Decode(&icon)
+	err = collection.FindOne(context, filter).Decode(&icon)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return "", models.ResponseType{Type: 404, Error: errors.New("there is no icon with specified id: " + id)}
@@ -137,7 +137,7 @@ func (s *MongoDB) DeleteInstituteIcon(id string) (string, models.ResponseType) {
 		}
 	}
 
-	_, err = collection.DeleteOne(context.TODO(), filter)
+	_, err = collection.DeleteOne(context, filter)
 	if err != nil {
 		return "", models.ResponseType{Type: 500, Error: err}
 	}

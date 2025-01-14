@@ -2,8 +2,9 @@ package main
 
 import (
 	"UrfuNavigator-backend/internal/app"
-	database "UrfuNavigator-backend/internal/database/mongo"
+	database "UrfuNavigator-backend/internal/database/mongo_repositories"
 	"UrfuNavigator-backend/internal/objstore"
+	"UrfuNavigator-backend/internal/services"
 	"log"
 	"os"
 
@@ -95,6 +96,7 @@ func main() {
 		port,
 		db,
 		objectStore,
+		services.Services{Store: db, ObjStore: objectStore},
 		cors,
 	)
 

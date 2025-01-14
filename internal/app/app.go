@@ -1,9 +1,10 @@
 package app
 
 import (
-	"UrfuNavigator-backend/internal/app/middleware"
 	"UrfuNavigator-backend/internal/database"
+	middleware "UrfuNavigator-backend/internal/middlewares"
 	"UrfuNavigator-backend/internal/objstore"
+	"UrfuNavigator-backend/internal/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -13,14 +14,16 @@ type API struct {
 	Port           string
 	Store          database.Store
 	ObjectStore    objstore.ObjectStore
+	Services       services.Services
 	AllowedOrigins string
 }
 
-func NewAPI(port string, store database.Store, objectStore objstore.ObjectStore, allowedOrigins string) *API {
+func NewAPI(port string, store database.Store, objectStore objstore.ObjectStore, services services.Services, allowedOrigins string) *API {
 	return &API{
 		Port:           port,
 		Store:          store,
 		ObjectStore:    objectStore,
+		Services:       services,
 		AllowedOrigins: allowedOrigins,
 	}
 }

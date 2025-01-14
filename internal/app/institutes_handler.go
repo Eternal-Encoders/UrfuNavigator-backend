@@ -2,7 +2,7 @@ package app
 
 import (
 	"UrfuNavigator-backend/internal/models"
-	"UrfuNavigator-backend/internal/utils"
+	"context"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,77 +16,23 @@ func (s *API) GetInstituteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Request must contain url query parameters")
 	}
 
-	instituteData, res := s.Store.GetInstitute(url)
+	instituteData, res := s.Services.GetInstitute(context.TODO(), url)
 	if res.Error != nil {
 		log.Println(res)
 		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	iconData, iconResp := s.Store.GetInstituteIconsByName([]string{instituteData.Icon})
-	if iconResp.Error != nil {
-		log.Println(iconResp)
-		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong in GetInstituteIcons")
-	}
-	if len(iconData) != 1 {
-		log.Println("There is too many or no media with id")
-		log.Println(iconData)
-		return c.Status(fiber.StatusNotFound).SendString("Cannot find media by id")
-	}
-
-	response := models.InstituteGet{
-		Id:              instituteData.Id.Hex(),
-		Name:            instituteData.Name,
-		DisplayableName: instituteData.DisplayableName,
-		MinFloor:        instituteData.MinFloor,
-		MaxFloor:        instituteData.MaxFloor,
-		Url:             instituteData.Url,
-		Latitude:        instituteData.Latitude,
-		Longitude:       instituteData.Longitude,
-		Icon:            utils.IconToIconResponse(iconData[0]),
-	}
-
-	return c.JSON(response)
+	return c.JSON(instituteData)
 }
 
 func (s *API) GetAllInstitutesHandler(c *fiber.Ctx) error {
-	institutesData, res := s.Store.GetAllInstitutes()
+	institutesData, res := s.Services.GetAllInstitutes(context.TODO())
 	if res.Error != nil {
 		log.Println(res.Error)
 		return c.Status(res.Type).SendString(res.Error.Error())
 	}
 
-	iconIds := []string{}
-	for _, institute := range institutesData {
-		iconIds = append(iconIds, institute.Icon)
-	}
-
-	iconsData, iconResp := s.Store.GetInstituteIcons(iconIds)
-	if iconResp.Error != nil {
-		log.Println(iconResp)
-		return c.Status(res.Type).SendString(iconResp.Error.Error())
-	}
-
-	if len(iconsData) != len(institutesData) {
-		log.Printf("IconsData length = %d and InstitutesData length = %d", len(iconsData), len(institutesData))
-		return c.Status(fiber.StatusNotFound).SendString("For some of the institutes icons not founded")
-	}
-
-	response := []models.InstituteGet{}
-	for i, institue := range institutesData {
-		response = append(response, models.InstituteGet{
-			Id:              institue.Id.Hex(),
-			Name:            institue.Name,
-			DisplayableName: institue.DisplayableName,
-			MinFloor:        institue.MinFloor,
-			MaxFloor:        institue.MaxFloor,
-			Url:             institue.Url,
-			Latitude:        institue.Latitude,
-			Longitude:       institue.Longitude,
-			Icon:            utils.IconToIconResponse(iconsData[i]),
-		})
-	}
-
-	return c.JSON(response)
+	return c.Status(res.Type).JSON(institutesData)
 }
 
 func (s *API) PostInstituteHandler(c *fiber.Ctx) error {
@@ -97,7 +43,7 @@ func (s *API) PostInstituteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Something wrong with request body")
 	}
 
-	res := s.Store.PostInstitute(*data)
+	res := s.Services.PostInstitute(context.TODO(), *data)
 	if res.Error != nil {
 		log.Println(res.Error)
 		return c.Status(res.Type).SendString(res.Error.Error())
@@ -109,7 +55,7 @@ func (s *API) PostInstituteHandler(c *fiber.Ctx) error {
 func (s *API) DeleteInstituteHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	res := s.Store.DeleteInstitute(id)
+	res := s.Services.DeleteInstitute(context.TODO(), id)
 	if res.Error != nil {
 		log.Println(res.Error)
 		return c.Status(res.Type).SendString(res.Error.Error())
@@ -127,7 +73,7 @@ func (s *API) PutInstituteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
 	}
 
-	res := s.Store.UpdateInstitute(*data, id)
+	res := s.Services.UpdateInstitute(context.TODO(), *data, id)
 	if res.Error != nil {
 		log.Println(res.Error)
 		return c.Status(res.Type).SendString(res.Error.Error())

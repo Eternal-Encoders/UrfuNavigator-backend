@@ -36,3 +36,14 @@ type InstitutePost struct {
 	Longitude       float64 `json:"longitude"`
 	Icon            string  `json:"icon"`
 }
+
+type InstituteNullable struct {
+	Name            *string  `json:"name"`
+	DisplayableName *string  `bson:"displayableName" json:"displayableName"`
+	MinFloor        *int     `bson:"minFloor" json:"minFloor"`
+	MaxFloor        *int     `bson:"maxFloor" json:"maxFloor"`
+	Url             *string  `json:"url"`
+	Latitude        *float64 `json:"latitude"`
+	Longitude       *float64 `json:"longitude"`
+	Icon            *string  `json:"icon"`
+}

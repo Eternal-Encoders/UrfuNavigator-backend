@@ -11,7 +11,7 @@ import (
 func (s *API) GetGraphHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	graphData, res := s.Store.GetGraph(id)
+	graphData, res := s.Services.GetGraph(context.TODO(), id)
 	if res.Error != nil {
 		log.Println(res)
 		return c.Status(res.Type).SendString(res.Error.Error())
@@ -21,7 +21,7 @@ func (s *API) GetGraphHandler(c *fiber.Ctx) error {
 }
 
 func (s *API) GetAllGraphsHandler(c *fiber.Ctx) error {
-	graphData, res := s.Store.GetAllGraphs()
+	graphData, res := s.Services.GetAllGraphs(context.TODO())
 	if res.Error != nil {
 		log.Println(res)
 		return c.Status(res.Type).SendString(res.Error.Error())
@@ -39,7 +39,7 @@ func (s *API) PutGraphHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Something wrong with request body")
 	}
 
-	res := s.Store.UpdateGraph(context.TODO(), *data, id)
+	res := s.Services.UpdateGraph(context.TODO(), *data, id)
 	if res.Error != nil {
 		log.Println(res)
 		return c.Status(res.Type).SendString(res.Error.Error())
@@ -51,7 +51,7 @@ func (s *API) PutGraphHandler(c *fiber.Ctx) error {
 func (s *API) DeleteGraphHandler(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	res := s.Store.DeleteGraph(id)
+	res := s.Services.DeleteGraph(context.TODO(), id)
 	if res.Error != nil {
 		log.Println(res)
 		return c.Status(res.Type).SendString(res.Error.Error())

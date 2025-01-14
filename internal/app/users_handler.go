@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,7 +10,7 @@ import (
 func (s *API) GetUserHandler(c *fiber.Ctx) error {
 	email := c.Query("email")
 
-	userData, res := s.Store.GetUser(email)
+	userData, res := s.Services.GetUser(context.TODO(), email)
 	if res.Error != nil {
 		log.Println(res)
 		return c.Status(res.Type).SendString(res.Error.Error())
@@ -19,7 +20,7 @@ func (s *API) GetUserHandler(c *fiber.Ctx) error {
 }
 
 func (s *API) GetAllUsersHandler(c *fiber.Ctx) error {
-	userData, res := s.Store.GetAllUsers()
+	userData, res := s.Services.GetAllUsers(context.TODO())
 	if res.Error != nil {
 		log.Println(res)
 		return c.Status(res.Type).SendString(res.Error.Error())
