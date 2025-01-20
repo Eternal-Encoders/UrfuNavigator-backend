@@ -14,7 +14,7 @@ import (
 func (s *Services) GetInstitute(context context.Context, url string) (models.InstituteGet, models.ResponseType) {
 	var response models.InstituteGet
 	institute, res := s.Store.GetInstitute(context,
-		[]models.Query{models.Query{ParamName: "url", Type: "string", StringValue: url}})
+		[]models.Query{{ParamName: "url", Type: "string", StringValue: url}})
 	if res.Error != nil {
 		return response, res
 	}
@@ -34,6 +34,7 @@ func (s *Services) GetInstitute(context context.Context, url string) (models.Ins
 		Latitude:        institute.Latitude,
 		Longitude:       institute.Longitude,
 		Icon:            utils.IconToIconResponse(icon[0]),
+		GPS:             institute.GPS,
 	}
 
 	return response, models.ResponseType{Type: 200, Error: nil}
@@ -46,13 +47,16 @@ func (s *Services) GetAllInstitutes(context context.Context) ([]models.Institute
 	if res.Error != nil {
 		return response, res
 	}
+	log.Println(institutes)
 
-	iconIds := []string{}
+	iconNames := []string{}
 	for _, institute := range institutes {
-		iconIds = append(iconIds, institute.Icon)
+		iconNames = append(iconNames, institute.Icon)
 	}
 
-	iconsData, iconResp := s.Store.GetInstituteIconsById(context, iconIds)
+	log.Println(iconNames)
+
+	iconsData, iconResp := s.Store.GetInstituteIconsByName(context, iconNames)
 	if iconResp.Error != nil {
 		log.Println(iconResp)
 		return response, res
@@ -74,6 +78,7 @@ func (s *Services) GetAllInstitutes(context context.Context) ([]models.Institute
 			Latitude:        institue.Latitude,
 			Longitude:       institue.Longitude,
 			Icon:            utils.IconToIconResponse(iconsData[i]),
+			GPS:             institue.GPS,
 		})
 	}
 
@@ -93,7 +98,7 @@ func (s *Services) DeleteInstitute(context context.Context, id string) models.Re
 			return models.ResponseType{Type: 500, Error: err}, nil
 		}
 
-		institute, res := s.Store.GetInstitute(ctx, []models.Query{models.Query{ParamName: "_id", Type: "ObjectID", ObjectIDValue: objId}})
+		institute, res := s.Store.GetInstitute(ctx, []models.Query{{ParamName: "_id", Type: "ObjectID", ObjectIDValue: objId}})
 
 		if res.Error != nil {
 			if res.Error == mongo.ErrNoDocuments {
@@ -103,13 +108,13 @@ func (s *Services) DeleteInstitute(context context.Context, id string) models.Re
 			}
 		}
 
-		_, res = s.Store.GetFloor(ctx, []models.Query{models.Query{ParamName: "institute", Type: "string", StringValue: institute.Name}})
+		_, res = s.Store.GetFloor(ctx, []models.Query{{ParamName: "institute", Type: "string", StringValue: institute.Name}})
 		if res.Error == nil {
 			return models.ResponseType{Type: 404, Error: errors.New("can not delete institute with floors")}, nil
 		}
 
 		return s.Store.DeleteInstitute(ctx,
-			[]models.Query{models.Query{ParamName: "_id", Type: "ObjectID", ObjectIDValue: objId}}), nil
+			[]models.Query{{ParamName: "_id", Type: "ObjectID", ObjectIDValue: objId}}), nil
 	})
 }
 
@@ -125,7 +130,7 @@ func (s *Services) UpdateInstitute(context context.Context, body models.Institut
 			return models.ResponseType{Type: 500, Error: err}, nil
 		}
 
-		filter := []models.Query{models.Query{ParamName: "_id", Type: "ObjectID", ObjectIDValue: objId}}
+		filter := []models.Query{{ParamName: "_id", Type: "ObjectID", ObjectIDValue: objId}}
 
 		oldInstitute, res := s.Store.GetInstitute(ctx, filter)
 		if res.Error != nil {
@@ -139,7 +144,7 @@ func (s *Services) UpdateInstitute(context context.Context, body models.Institut
 		if oldInstitute.Name != body.Name || oldInstitute.MaxFloor != body.MaxFloor || oldInstitute.MinFloor != body.MinFloor {
 			var floors []models.Floor
 
-			filter = []models.Query{models.Query{ParamName: "institute", Type: "string", StringValue: oldInstitute.Name}}
+			filter = []models.Query{{ParamName: "institute", Type: "string", StringValue: oldInstitute.Name}}
 			floors, res := s.Store.GetManyFloors(ctx, filter)
 			if res.Error != nil {
 				return res, nil
@@ -150,8 +155,8 @@ func (s *Services) UpdateInstitute(context context.Context, body models.Institut
 					return models.ResponseType{Type: 406, Error: errors.New("there is a floor out of new floor bounds")}, nil
 				}
 
-				filter = []models.Query{models.Query{ParamName: "institute", Type: "string", StringValue: oldInstitute.Name},
-					models.Query{ParamName: "floor", Type: "int", IntValue: floor.Floor}}
+				filter = []models.Query{{ParamName: "institute", Type: "string", StringValue: oldInstitute.Name},
+					{ParamName: "floor", Type: "int", IntValue: floor.Floor}}
 
 				res = s.Store.UpdateManyGraphs(ctx, filter, struct {
 					Institute string `bson:"institute"`
@@ -162,7 +167,7 @@ func (s *Services) UpdateInstitute(context context.Context, body models.Institut
 				}
 			}
 
-			filter = []models.Query{models.Query{ParamName: "institute", Type: "string", StringValue: oldInstitute.Name}}
+			filter = []models.Query{{ParamName: "institute", Type: "string", StringValue: oldInstitute.Name}}
 
 			res = s.Store.UpdateManyStairs(ctx, filter, struct {
 				Institute string `bson:"institute"`
@@ -172,7 +177,7 @@ func (s *Services) UpdateInstitute(context context.Context, body models.Institut
 				return res, nil
 			}
 
-			filter = []models.Query{models.Query{ParamName: "institute", Type: "string", StringValue: oldInstitute.Name}}
+			filter = []models.Query{{ParamName: "institute", Type: "string", StringValue: oldInstitute.Name}}
 
 			res = s.Store.UpdateManyFloors(ctx, filter, struct {
 				Institute string `bson:"institute"`
@@ -190,7 +195,7 @@ func (s *Services) UpdateInstitute(context context.Context, body models.Institut
 			}
 		}
 
-		filter = []models.Query{models.Query{ParamName: "_id", Type: "ObjectID", ObjectIDValue: objId}}
+		filter = []models.Query{{ParamName: "_id", Type: "ObjectID", ObjectIDValue: objId}}
 		return s.Store.UpdateInstitute(ctx, filter, body), nil
 	})
 }

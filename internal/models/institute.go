@@ -12,6 +12,7 @@ type Institute struct {
 	Latitude        float64            `json:"latitude"`
 	Longitude       float64            `json:"longitude"`
 	Icon            string             `json:"icon"`
+	GPS             []*GPS             `bson:"gps" json:"gps"`
 }
 
 type InstituteGet struct {
@@ -24,6 +25,7 @@ type InstituteGet struct {
 	Latitude        float64           `json:"latitude"`
 	Longitude       float64           `json:"longitude"`
 	Icon            InstituteIconPost `json:"icon"`
+	GPS             []*GPS            `bson:"gps" json:"gps"`
 }
 
 type InstitutePost struct {
@@ -35,15 +37,10 @@ type InstitutePost struct {
 	Latitude        float64 `json:"latitude"`
 	Longitude       float64 `json:"longitude"`
 	Icon            string  `json:"icon"`
+	GPS             []*GPS  `bson:"gps" json:"gps"`
 }
 
-type InstituteNullable struct {
-	Name            *string  `json:"name"`
-	DisplayableName *string  `bson:"displayableName" json:"displayableName"`
-	MinFloor        *int     `bson:"minFloor" json:"minFloor"`
-	MaxFloor        *int     `bson:"maxFloor" json:"maxFloor"`
-	Url             *string  `json:"url"`
-	Latitude        *float64 `json:"latitude"`
-	Longitude       *float64 `json:"longitude"`
-	Icon            *string  `json:"icon"`
+type GPS struct {
+	Centre float64 `bson:"centre" json:"centre"`
+	Floor  int     `bson:"floor" json:"floor"`
 }

@@ -11,6 +11,7 @@ type Floor struct {
 	Audiences []*Auditorium      `json:"audiences"`
 	Service   []*Service         `json:"service"`
 	Graph     []string           `json:"graph"`
+	Forces    []*Forces          `bson:"forces" json:"forces"`
 }
 
 type FloorResponse struct {
@@ -22,6 +23,7 @@ type FloorResponse struct {
 	Audiences []*Auditorium `json:"audiences"`
 	Service   []*Service    `json:"service"`
 	Graph     []string      `json:"graph"`
+	Forces    []*Forces     `bson:"forces" json:"forces"`
 }
 
 type FloorRequest struct {
@@ -32,6 +34,7 @@ type FloorRequest struct {
 	Audiences []*Auditorium `json:"audiences"`
 	Service   []*Service    `json:"service"`
 	Graph     []string      `json:"graph"`
+	Forces    []*Forces     `bson:"forces" json:"forces"`
 }
 
 type FloorPut struct {
@@ -42,6 +45,7 @@ type FloorPut struct {
 	Audiences []*Auditorium `json:"audiences"`
 	Service   []*Service    `json:"service"`
 	Graph     []string      `json:"graph"`
+	Forces    []*Forces     `bson:"forces" json:"forces"`
 }
 
 type FloorFromFile struct {
@@ -52,6 +56,7 @@ type FloorFromFile struct {
 	Audiences map[string]*Auditorium `json:"audiences"`
 	Service   []*Service             `json:"service"`
 	Graph     map[string]*GraphPoint `json:"graph"`
+	Forces    []*Forces              `bson:"forces" json:"forces"`
 }
 
 type Auditorium struct {
@@ -90,4 +95,14 @@ type Service struct {
 	Data   string  `json:"data"`
 	Stroke string  `json:"stroke"`
 	Fill   string  `json:"fill"`
+}
+
+type Forces struct {
+	Point Coordinates `bson:"point" json:"point"`
+	Force Coordinates `bson:"force" json:"force"`
+}
+
+type Coordinates struct {
+	X float64 `bson:"x" json:"x"`
+	Y float64 `bson:"y" json:"y"`
 }

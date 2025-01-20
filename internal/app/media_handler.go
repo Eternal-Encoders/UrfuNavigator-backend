@@ -56,7 +56,7 @@ func (s *API) PostIconHandler(c *fiber.Ctx) error {
 
 	res := s.Services.PostIcon(context.TODO(), file)
 
-	return c.Status(res.Type).SendString(res.Error.Error())
+	return c.Status(res.Type).SendString("successfully added")
 }
 
 func (s *API) DeleteIconHandler(c *fiber.Ctx) error {
@@ -65,5 +65,5 @@ func (s *API) DeleteIconHandler(c *fiber.Ctx) error {
 	log.Println(id)
 	res := s.Services.DeleteIcon(context.TODO(), id)
 
-	return c.Status(res.Type).SendString(res.Error.Error())
+	return c.Status(res.Type).SendString("successfully deleted")
 }

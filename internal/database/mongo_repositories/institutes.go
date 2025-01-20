@@ -62,6 +62,7 @@ func (s *MongoDB) GetManyInstitutes(context context.Context, filter []models.Que
 
 func (s *MongoDB) GetAllInstitutes(context context.Context) ([]models.Institute, models.ResponseType) {
 	collection := s.Database.Collection("insitutes")
+	//collection := s.Database.Collection("insitutes")
 
 	cursor, err := collection.Find(context, bson.M{})
 	if err != nil {

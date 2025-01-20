@@ -56,5 +56,6 @@ func FloorToFloorPut(floor models.Floor) models.FloorPut {
 		Audiences: floor.Audiences,
 		Service:   floor.Service,
 		Graph:     floor.Graph,
+		Forces:    floor.Forces,
 	}
 }
