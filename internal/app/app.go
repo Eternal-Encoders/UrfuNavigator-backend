@@ -45,6 +45,7 @@ func (s *API) Run() error {
 	app.Use(cors)
 
 	app.Get("/icon", middleware.JWTProtected, s.GetIconHandler)
+	app.Get("/iconImage", middleware.JWTProtected, s.GetIconImageHandler)
 	app.Get("/icons", middleware.JWTProtected, s.GetAllIconsHandler)
 	app.Get("/institute", middleware.JWTProtected, s.GetInstituteHandler)
 	app.Get("/institutes", middleware.JWTProtected, s.GetAllInstitutesHandler)
